@@ -10,7 +10,7 @@ enum FileMode {
     SaveAsPrompt,
 }
 
-fn line_wrap_count(text : &str, width : usize) -> usize {
+fn line_wrap_count(text: &str, width: usize) -> usize {
     let mut len = text.len();
     let mut t = 0;
     while len > width {
@@ -387,20 +387,24 @@ fn main() {
 
             let mut skips = 0;
             let mut index = 0;
-            while index + skips < (height
-                .min((buffer.len() as isize - window_start as isize).max(0) as usize))
-            .min(height - 1)
+            while index + skips
+                < (height.min((buffer.len() as isize - window_start as isize).max(0) as usize))
+                    .min(height - 1)
             {
                 let line = &buffer[index + window_start as usize];
 
-                render_buffer.push_str(&termion::cursor::Goto(0, 1 + (index + skips) as u16).to_string());
+                render_buffer
+                    .push_str(&termion::cursor::Goto(0, 1 + (index + skips) as u16).to_string());
                 render_buffer.push_str(&format!("{}", index as usize + window_start));
                 render_buffer.push_str(
-                    &termion::cursor::Goto(window_padding as u16 - 2, 1 + (index + skips) as u16).to_string(),
+                    &termion::cursor::Goto(window_padding as u16 - 2, 1 + (index + skips) as u16)
+                        .to_string(),
                 );
                 render_buffer.push_str(":");
-                render_buffer
-                    .push_str(&termion::cursor::Goto(window_padding as u16, 1 + (index + skips) as u16).to_string());
+                render_buffer.push_str(
+                    &termion::cursor::Goto(window_padding as u16, 1 + (index + skips) as u16)
+                        .to_string(),
+                );
                 render_buffer.push_str(line);
 
                 skips += line_wrap_count(line, width - window_padding + 1);
@@ -446,7 +450,8 @@ fn main() {
             if cursor_on {
                 render_buffer.push_str(
                     &termion::cursor::Goto(
-                        (window_padding + (cursor_column as usize % (width - window_padding))) as u16,
+                        (window_padding + (cursor_column as usize % (width - window_padding)))
+                            as u16,
                         1 + (cursor_line as usize - window_start) as u16,
                     )
                     .to_string(),
