@@ -140,6 +140,7 @@ fn main() {
                                             .read(true)
                                             .write(true)
                                             .create(true)
+                                            .truncate(true)
                                             .open(path)
                                             .unwrap();
 
@@ -228,6 +229,11 @@ fn main() {
                                         }
                                         Key::Char('w') => {
                                             file_mode = FileMode::SaveAsPrompt;
+                                            bottom_bar_buffer.clear();
+                                            bottom_bar_buffer.insert_str(
+                                                0,
+                                                file_path.as_path().to_str().unwrap(),
+                                            );
                                         }
                                         Key::Char('t') => {
                                             cursor_column += 1;
