@@ -20,6 +20,18 @@ fn line_wrap_count(text: &str, width: usize) -> usize {
     return t;
 }
 
+fn dvorak_to_qwerty(c: char) -> char {
+    #[cfg(feature = "qwerty")]
+    {
+    return match c {
+        'u' => 'f',
+        'e' => 'd',
+        other => other,
+    };
+    }
+    c
+}
+
 fn main() {
     {
         let mut args: Vec<String> = std::env::args().collect();
@@ -102,7 +114,7 @@ fn main() {
                     Some(c) => {
                         match file_mode {
                             FileMode::Open => match c.unwrap() {
-                                Key::Char('\n') => {
+                                Key::Char(c) if c == (dvorak_to_qwerty('\n')) => {
                                     let path = std::path::Path::new(&bottom_bar_buffer);
                                     if path.parent().is_some()
                                         && path.parent().unwrap().exists()
@@ -119,7 +131,7 @@ fn main() {
                                         cursor_column = 0;
                                     }
                                 }
-                                Key::Char(c) => {
+                                Key::Char(c) if c == (dvorak_to_qwerty(c)) => {
                                     bottom_bar_buffer.push(c);
                                 }
                                 Key::Backspace => {
@@ -131,7 +143,7 @@ fn main() {
                                 _ => (),
                             },
                             FileMode::SaveAsPrompt => match c.unwrap() {
-                                Key::Char('\n') => {
+                                Key::Char(c) if c == (dvorak_to_qwerty('\n')) => {
                                     let path = std::path::Path::new(&bottom_bar_buffer);
                                     if !path.is_dir() {
                                         use std::fs::OpenOptions;
@@ -151,7 +163,7 @@ fn main() {
                                         file_mode = FileMode::Edit;
                                     }
                                 }
-                                Key::Char(c) => {
+                                Key::Char(c)  => {
                                     bottom_bar_buffer.push(c);
                                 }
                                 Key::Backspace => {
@@ -163,16 +175,17 @@ fn main() {
                                 _ => (),
                             },
                             FileMode::Edit => {
+                                ///////////////
                                 if insert_mode {
                                     match c.unwrap() {
-                                        Key::Char('\n') => {
+                                        Key::Char(c) if c == (dvorak_to_qwerty('\n')) => {
                                             let newstr = buffer[cursor_line as usize]
                                                 .split_off(cursor_column as usize);
                                             buffer.insert(cursor_line as usize + 1, newstr);
                                             cursor_column = current_indentation;
                                             cursor_line += 1;
                                         }
-                                        Key::Char('\t') => {
+                                        Key::Char(c) if c == (dvorak_to_qwerty('\t')) => {
                                             last_cursor_flip = std::time::Instant::now();
                                             cursor_on = true;
                                             for x in 0..4 {
@@ -181,7 +194,7 @@ fn main() {
                                                 cursor_column += 1;
                                             }
                                         }
-                                        Key::Char(c) => {
+                                        Key::Char(c)  => {
                                             buffer[cursor_line as usize]
                                                 .insert(cursor_column as usize, c);
                                             cursor_column += 1;
@@ -208,8 +221,8 @@ fn main() {
                                 } else {
                                     match c.unwrap() {
                                         // Exit.
-                                        Key::Char('q') => running = false,
-                                        Key::Char('f') => {
+                                        Key::Char(c) if c == (dvorak_to_qwerty('q')) => running = false,
+                                        Key::Char(c) if c == (dvorak_to_qwerty('f')) => {
                                             file_mode = FileMode::Open;
                                             bottom_bar_buffer.clear();
                                             bottom_bar_buffer.insert_str(
@@ -227,7 +240,7 @@ fn main() {
                                             );
                                             bottom_bar_buffer.push('/');
                                         }
-                                        Key::Char('w') => {
+                                        Key::Char(c) if c == (dvorak_to_qwerty('w')) => {
                                             file_mode = FileMode::SaveAsPrompt;
                                             bottom_bar_buffer.clear();
                                             bottom_bar_buffer.insert_str(
@@ -235,37 +248,37 @@ fn main() {
                                                 file_path.as_path().to_str().unwrap(),
                                             );
                                         }
-                                        Key::Char('t') => {
+                                        Key::Char(c) if c == (dvorak_to_qwerty('t')) => {
                                             cursor_column += 1;
                                             last_cursor_flip = std::time::Instant::now();
                                             cursor_on = true;
                                         }
-                                        Key::Char('h') => {
+                                        Key::Char(c) if c == (dvorak_to_qwerty('h')) => {
                                             cursor_column -= 1;
                                             last_cursor_flip = std::time::Instant::now();
                                             cursor_on = true;
                                         }
-                                        Key::Char('e') => {
+                                        Key::Char(c) if c == (dvorak_to_qwerty('e')) => {
                                             cursor_line += 1;
                                             last_cursor_flip = std::time::Instant::now();
                                             cursor_on = true;
                                         }
-                                        Key::Char('u') => {
+                                        Key::Char(c) if c == (dvorak_to_qwerty('u')) => {
                                             cursor_line -= 1;
                                             last_cursor_flip = std::time::Instant::now();
                                             cursor_on = true;
                                         }
-                                        Key::Char('E') => {
+                                        Key::Char(c) if c == (dvorak_to_qwerty('E')) => {
                                             cursor_line += 20;
                                             last_cursor_flip = std::time::Instant::now();
                                             cursor_on = true;
                                         }
-                                        Key::Char('U') => {
+                                        Key::Char(c) if c == (dvorak_to_qwerty('U')) => {
                                             cursor_line -= 20;
                                             last_cursor_flip = std::time::Instant::now();
                                             cursor_on = true;
                                         }
-                                        Key::Char('i') => {
+                                        Key::Char(c) if c == (dvorak_to_qwerty('i')) => {
                                             while cursor_line as usize >= buffer.len() {
                                                 buffer.push(String::with_capacity(width));
                                             }
@@ -276,7 +289,7 @@ fn main() {
                                                 buffer[cursor_line as usize].push(' ');
                                             }
                                         }
-                                        Key::Char('d') => {
+                                        Key::Char(c) if c == (dvorak_to_qwerty('d')) => {
                                             last_cursor_flip = std::time::Instant::now();
                                             cursor_on = true;
                                             if (cursor_column as usize)
@@ -317,7 +330,7 @@ fn main() {
                                                 }
                                             }
                                         }
-                                        Key::Char('k') => {
+                                        Key::Char(c) if c == (dvorak_to_qwerty('k')) => {
                                             if cursor_column as usize
                                                 >= buffer[cursor_line as usize].len()
                                             {
@@ -341,18 +354,12 @@ fn main() {
                                             last_cursor_flip = std::time::Instant::now();
                                             cursor_on = true;
                                         }
-                                        Key::Char('\t') => {
+                                        Key::Char(c) if c == (dvorak_to_qwerty('\t')) => {
                                             last_cursor_flip = std::time::Instant::now();
                                             cursor_on = true;
                                             cursor_column += 4;
                                         }
-                                        Key::Alt(c) => println!("Alt-{}", c),
-                                        Key::Ctrl(c) => println!("Ctrl-{}", c),
-                                        Key::Left => println!("<left>"),
-                                        Key::Right => println!("<right>"),
-                                        Key::Up => println!("<up>"),
-                                        Key::Down => println!("<down>"),
-                                        _ => println!("Other"),
+                                        _ => (),
                                     }
                                 }
                             }
@@ -451,7 +458,7 @@ fn main() {
                     &termion::cursor::Goto(
                         (window_padding + (cursor_column as usize % (width - window_padding)))
                             as u16,
-                        1 + (cursor_line as usize - window_start) as u16,
+                        1 + (cursor_line as usize - window_start + skips) as u16,
                     )
                     .to_string(),
                 );
@@ -468,3 +475,4 @@ fn main() {
     }
     println!("Thank you for using dte!");
 }
+
