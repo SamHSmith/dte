@@ -7,8 +7,17 @@ use std::io::{stdin, stdout, Write};
 enum FileMode {
     Edit,
     Open,
-    NewFilePrompt,
     SaveAsPrompt,
+}
+
+fn line_wrap_count(text : &str, width : usize) -> usize {
+    let mut len = text.len();
+    let mut t = 0;
+    while len > width {
+        len -= width;
+        t += 1;
+    }
+    return t;
 }
 
 fn main() {
@@ -19,12 +28,14 @@ fn main() {
         let mut stdin_keys = stdin.keys();
         let mut stdout = stdout().into_raw_mode().unwrap();
 
-        let mut file_path = if args.len() > 1 {
-            std::path::PathBuf::from(args.remove(1))
-        } else {
-            std::path::PathBuf::new()
-        };
+        let mut file_path = std::path::PathBuf::from(".".to_owned());
+        file_path = file_path.canonicalize().unwrap();
         let mut should_load_file = file_path.to_str().unwrap().len() > 1 && file_path.exists();
+        if args.len() > 1 {
+            file_path.push(args.remove(1));
+        } else {
+            should_load_file = false;
+        }
 
         let mut render_buffer: String = String::new();
         let mut width: usize;
@@ -92,8 +103,55 @@ fn main() {
                         match file_mode {
                             FileMode::Open => match c.unwrap() {
                                 Key::Char('\n') => {
+                                    let path = std::path::Path::new(&bottom_bar_buffer);
+                                    if path.parent().is_some()
+                                        && path.parent().unwrap().exists()
+                                        && !path.is_dir()
+                                    {
+                                        if file_path.exists() && !path.exists() {
+                                            buffer.truncate(1);
+                                            buffer[0].clear();
+                                        }
+                                        file_mode = FileMode::Edit;
+                                        file_path = path.to_owned();
+                                        should_load_file = file_path.exists();
+                                        cursor_line = 0;
+                                        cursor_column = 0;
+                                    }
+                                }
+                                Key::Char(c) => {
+                                    bottom_bar_buffer.push(c);
+                                }
+                                Key::Backspace => {
+                                    bottom_bar_buffer.pop();
+                                }
+                                Key::Esc => {
+                                    file_mode = FileMode::Edit;
+                                }
+                                _ => (),
+                            },
+                            FileMode::SaveAsPrompt => match c.unwrap() {
+                                Key::Char('\n') => {
+                                    let path = std::path::Path::new(&bottom_bar_buffer);
+                                    if !path.is_dir() {
+                                        use std::fs::OpenOptions;
+                                        use std::io::{BufWriter, Write};
+                                        let mut f = OpenOptions::new()
+                                            .read(true)
+                                            .write(true)
+                                            .create(true)
+                                            .open(path)
+                                            .unwrap();
+
+                                        for b in buffer.iter() {
+                                            f.write_all(b.as_bytes()).unwrap();
+                                            f.write_all(b"\n");
+                                        }
+                                    }
                                     file_mode = FileMode::Edit;
                                     file_path.clear();
+                                    file_path.push("./");
+                                    file_path = file_path.canonicalize().unwrap();
                                     file_path.push(std::path::Path::new(&bottom_bar_buffer));
                                     should_load_file = file_path.exists();
                                     cursor_line = 0;
@@ -104,6 +162,9 @@ fn main() {
                                 }
                                 Key::Backspace => {
                                     bottom_bar_buffer.pop();
+                                }
+                                Key::Esc => {
+                                    file_mode = FileMode::Edit;
                                 }
                                 _ => (),
                             },
@@ -116,6 +177,15 @@ fn main() {
                                             buffer.insert(cursor_line as usize + 1, newstr);
                                             cursor_column = current_indentation;
                                             cursor_line += 1;
+                                        }
+                                        Key::Char('\t') => {
+                                            last_cursor_flip = std::time::Instant::now();
+                                            cursor_on = true;
+                                            for x in 0..4 {
+                                                buffer[cursor_line as usize]
+                                                    .insert(cursor_column as usize, ' ');
+                                                cursor_column += 1;
+                                            }
                                         }
                                         Key::Char(c) => {
                                             buffer[cursor_line as usize]
@@ -147,6 +217,24 @@ fn main() {
                                         Key::Char('q') => running = false,
                                         Key::Char('f') => {
                                             file_mode = FileMode::Open;
+                                            bottom_bar_buffer.clear();
+                                            bottom_bar_buffer.insert_str(
+                                                0,
+                                                if !file_path.is_dir() {
+                                                    file_path
+                                                        .as_path()
+                                                        .parent()
+                                                        .unwrap()
+                                                        .to_str()
+                                                        .unwrap()
+                                                } else {
+                                                    file_path.as_path().to_str().unwrap()
+                                                },
+                                            );
+                                            bottom_bar_buffer.push('/');
+                                        }
+                                        Key::Char('w') => {
+                                            file_mode = FileMode::SaveAsPrompt;
                                         }
                                         Key::Char('t') => {
                                             cursor_column += 1;
@@ -211,12 +299,23 @@ fn main() {
                                                 buffer[cursor_line as usize]
                                                     .remove(cursor_column as usize);
                                             } else {
-                                                let st = buffer.remove(cursor_line as usize);
-                                                let length = buffer[cursor_line as usize - 1].len();
-                                                buffer[cursor_line as usize - 1]
-                                                    .insert_str(length, &st);
-                                                cursor_line -= 1;
-                                                cursor_column = length as isize;
+                                                if cursor_line as usize > buffer.len() {
+                                                    cursor_line -= 1;
+                                                    cursor_column = 0;
+                                                } else {
+                                                    let st =
+                                                        if (cursor_line as usize) < buffer.len() {
+                                                            buffer.remove(cursor_line as usize)
+                                                        } else {
+                                                            "".to_owned()
+                                                        };
+                                                    let length =
+                                                        buffer[cursor_line as usize - 1].len();
+                                                    buffer[cursor_line as usize - 1]
+                                                        .insert_str(length, &st);
+                                                    cursor_line -= 1;
+                                                    cursor_column = length as isize;
+                                                }
                                             }
                                         }
                                         Key::Char('k') => {
@@ -231,7 +330,7 @@ fn main() {
                                                 let st = buffer.remove(cursor_line as usize + 1);
                                                 buffer[cursor_line as usize]
                                                     .insert_str(cursor_column as usize, &st);
-                                                //Copy pasta
+                                            //Copy pasta
                                             } else {
                                                 buffer[cursor_line as usize]
                                                     .truncate(cursor_column as usize);
@@ -242,6 +341,11 @@ fn main() {
                                             cursor_column = current_indentation;
                                             last_cursor_flip = std::time::Instant::now();
                                             cursor_on = true;
+                                        }
+                                        Key::Char('\t') => {
+                                            last_cursor_flip = std::time::Instant::now();
+                                            cursor_on = true;
+                                            cursor_column += 4;
                                         }
                                         Key::Alt(c) => println!("Alt-{}", c),
                                         Key::Ctrl(c) => println!("Ctrl-{}", c),
@@ -281,20 +385,27 @@ fn main() {
             render_buffer.push_str(termion::cursor::Hide.as_ref());
             render_buffer.push_str(termion::clear::All.as_ref());
 
-            for index in 0..(height
+            let mut skips = 0;
+            let mut index = 0;
+            while index + skips < (height
                 .min((buffer.len() as isize - window_start as isize).max(0) as usize))
             .min(height - 1)
             {
                 let line = &buffer[index + window_start as usize];
-                render_buffer.push_str(&termion::cursor::Goto(0, 1 + index as u16).to_string());
+
+                render_buffer.push_str(&termion::cursor::Goto(0, 1 + (index + skips) as u16).to_string());
                 render_buffer.push_str(&format!("{}", index as usize + window_start));
                 render_buffer.push_str(
-                    &termion::cursor::Goto(window_padding - 2, 1 + index as u16).to_string(),
+                    &termion::cursor::Goto(window_padding as u16 - 2, 1 + (index + skips) as u16).to_string(),
                 );
                 render_buffer.push_str(":");
                 render_buffer
-                    .push_str(&termion::cursor::Goto(window_padding, 1 + index as u16).to_string());
+                    .push_str(&termion::cursor::Goto(window_padding as u16, 1 + (index + skips) as u16).to_string());
                 render_buffer.push_str(line);
+
+                skips += line_wrap_count(line, width - window_padding + 1);
+
+                index += 1;
             }
 
             match file_mode {
@@ -320,6 +431,11 @@ fn main() {
                     render_buffer.push_str("Open File : ");
                     render_buffer.push_str(&bottom_bar_buffer);
                 }
+                FileMode::SaveAsPrompt => {
+                    render_buffer.push_str(&termion::cursor::Goto(0, height as u16).to_string());
+                    render_buffer.push_str("Save as : ");
+                    render_buffer.push_str(&bottom_bar_buffer);
+                }
                 _ => (),
             }
 
@@ -330,7 +446,7 @@ fn main() {
             if cursor_on {
                 render_buffer.push_str(
                     &termion::cursor::Goto(
-                        window_padding + cursor_column as u16,
+                        (window_padding + (cursor_column as usize % (width - window_padding))) as u16,
                         1 + (cursor_line as usize - window_start) as u16,
                     )
                     .to_string(),
