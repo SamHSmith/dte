@@ -147,15 +147,8 @@ fn main() {
                                             f.write_all(b.as_bytes()).unwrap();
                                             f.write_all(b"\n");
                                         }
+                                        file_mode = FileMode::Edit;
                                     }
-                                    file_mode = FileMode::Edit;
-                                    file_path.clear();
-                                    file_path.push("./");
-                                    file_path = file_path.canonicalize().unwrap();
-                                    file_path.push(std::path::Path::new(&bottom_bar_buffer));
-                                    should_load_file = file_path.exists();
-                                    cursor_line = 0;
-                                    cursor_column = 0;
                                 }
                                 Key::Char(c) => {
                                     bottom_bar_buffer.push(c);
