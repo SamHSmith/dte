@@ -69,7 +69,7 @@ fn main() {
                 let mut f = std::io::BufReader::new(f);
                 let mut index = 0;
                 loop {
-                    if index >= buffer.len() {
+                    if index < buffer.len() {
                         buffer[index].clear();
                     } else {
                         buffer.push(String::with_capacity(width));
@@ -88,12 +88,22 @@ fn main() {
 
             loop {
                 match stdin_keys.next() {
-                    // Print the key we type...
                     Some(c) => {
                         match file_mode {
                             FileMode::Open => match c.unwrap() {
                                 Key::Char('\n') => {
                                     file_mode = FileMode::Edit;
+                                    file_path.clear();
+                                    file_path.push(std::path::Path::new(&bottom_bar_buffer));
+                                    should_load_file = file_path.exists();
+                                    cursor_line = 0;
+                                    cursor_column = 0;
+                                }
+                                Key::Char(c) => {
+                                    bottom_bar_buffer.push(c);
+                                }
+                                Key::Backspace => {
+                                    bottom_bar_buffer.pop();
                                 }
                                 _ => (),
                             },
@@ -135,6 +145,9 @@ fn main() {
                                     match c.unwrap() {
                                         // Exit.
                                         Key::Char('q') => running = false,
+                                        Key::Char('f') => {
+                                            file_mode = FileMode::Open;
+                                        }
                                         Key::Char('t') => {
                                             cursor_column += 1;
                                             last_cursor_flip = std::time::Instant::now();
@@ -218,7 +231,7 @@ fn main() {
                                                 let st = buffer.remove(cursor_line as usize + 1);
                                                 buffer[cursor_line as usize]
                                                     .insert_str(cursor_column as usize, &st);
-                                            //Copy pasta
+                                                //Copy pasta
                                             } else {
                                                 buffer[cursor_line as usize]
                                                     .truncate(cursor_column as usize);
@@ -283,6 +296,33 @@ fn main() {
                     .push_str(&termion::cursor::Goto(window_padding, 1 + index as u16).to_string());
                 render_buffer.push_str(line);
             }
+
+            match file_mode {
+                FileMode::Edit => {
+                    let file = file_path.to_str().unwrap();
+                    render_buffer.push_str(
+                        &termion::cursor::Goto(
+                            (width as isize - file.len() as isize).max(0) as u16,
+                            height as u16,
+                        )
+                        .to_string(),
+                    );
+                    render_buffer.push_str(file);
+                    render_buffer.push_str(&termion::cursor::Goto(0, height as u16).to_string());
+                    if insert_mode {
+                        render_buffer.push_str("Insert Mode");
+                    } else {
+                        render_buffer.push_str("Move Mode");
+                    }
+                }
+                FileMode::Open => {
+                    render_buffer.push_str(&termion::cursor::Goto(0, height as u16).to_string());
+                    render_buffer.push_str("Open File : ");
+                    render_buffer.push_str(&bottom_bar_buffer);
+                }
+                _ => (),
+            }
+
             if last_cursor_flip.elapsed().as_millis() > cursor_cycle_duration / 2 {
                 last_cursor_flip = std::time::Instant::now();
                 cursor_on = !cursor_on;
@@ -297,13 +337,14 @@ fn main() {
                 );
                 render_buffer.push_str(termion::cursor::Show.as_ref());
             }
+
             write!(stdout, "{}", &render_buffer);
             stdout.flush().unwrap();
             std::thread::sleep(std::time::Duration::from_millis(1));
         }
         write!(stdout, "{}", termion::cursor::Show);
         write!(stdout, "{}", termion::clear::All);
-        write!(stdout, "{}", termion::cursor::Goto(1,1));
+        write!(stdout, "{}", termion::cursor::Goto(1, 1));
     }
     println!("Thank you for using dte!");
 }
