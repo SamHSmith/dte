@@ -26,6 +26,15 @@ fn dvorak_to_qwerty(c: char) -> char {
     return match c {
         'u' => 'f',
         'e' => 'd',
+        'w' => 'm',
+        't' => 'k',
+        'h' => 'j',
+        'E' => 'D',
+        'U' => 'F',
+        'i' => 'g',
+        'd' => 'h',
+        'k' => 'c',
+        'f' => 'y',
         other => other,
     };
     }
@@ -131,7 +140,7 @@ fn main() {
                                         cursor_column = 0;
                                     }
                                 }
-                                Key::Char(c) if c == (dvorak_to_qwerty(c)) => {
+                                Key::Char(c) => {
                                     bottom_bar_buffer.push(c);
                                 }
                                 Key::Backspace => {
@@ -376,7 +385,7 @@ fn main() {
             if cursor_column < 0 {
                 cursor_column = 0;
             }
-            if window_start + height - 2 < cursor_line as usize {
+            if window_start + height - 2 <= cursor_line as usize {
                 window_start = cursor_line as usize - (height - 2);
             } else if window_start > cursor_line as usize {
                 window_start = cursor_line as usize;
@@ -392,6 +401,8 @@ fn main() {
             render_buffer.push_str(termion::clear::All.as_ref());
 
             let mut skips = 0;
+            let mut skips_before_cursor = 0;
+
             let mut index = 0;
             while index + skips
                 < (height.min((buffer.len() as isize - window_start as isize).max(0) as usize))
@@ -414,6 +425,9 @@ fn main() {
                 render_buffer.push_str(line);
 
                 skips += line_wrap_count(line, width - window_padding + 1);
+                if index + window_start < cursor_line as usize {
+                    skips_before_cursor = skips;
+                }
 
                 index += 1;
             }
@@ -458,7 +472,7 @@ fn main() {
                     &termion::cursor::Goto(
                         (window_padding + (cursor_column as usize % (width - window_padding)))
                             as u16,
-                        1 + (cursor_line as usize - window_start + skips) as u16,
+                        1 + (cursor_line as usize - window_start + skips_before_cursor) as u16,
                     )
                     .to_string(),
                 );
@@ -475,4 +489,6 @@ fn main() {
     }
     println!("Thank you for using dte!");
 }
+
+
 
