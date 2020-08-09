@@ -57,6 +57,9 @@ fn main() {
         } else {
             should_load_file = false;
         }
+        if should_load_file && !file_path.is_file() { //It's a new file.
+            should_load_file = false;
+        }
 
         let mut render_buffer: String = String::new();
         let mut width: usize;
@@ -489,6 +492,7 @@ fn main() {
     }
     println!("Thank you for using dte!");
 }
+
 
 
 
