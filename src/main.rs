@@ -23,20 +23,20 @@ fn line_wrap_count(text: &str, width: usize) -> usize {
 fn dvorak_to_qwerty(c: char) -> char {
     #[cfg(feature = "qwerty")]
     {
-    return match c {
-        'u' => 'f',
-        'e' => 'd',
-        'w' => 'm',
-        't' => 'k',
-        'h' => 'j',
-        'E' => 'D',
-        'U' => 'F',
-        'i' => 'g',
-        'd' => 'h',
-        'k' => 'c',
-        'f' => 'y',
-        other => other,
-    };
+        return match c {
+            'u' => 'f',
+            'e' => 'd',
+            'w' => 'm',
+            't' => 'k',
+            'h' => 'j',
+            'E' => 'D',
+            'U' => 'F',
+            'i' => 'g',
+            'd' => 'h',
+            'k' => 'c',
+            'f' => 'y',
+            other => other,
+        };
     }
     c
 }
@@ -57,7 +57,8 @@ fn main() {
         } else {
             should_load_file = false;
         }
-        if should_load_file && !file_path.is_file() { //It's a new file.
+        if should_load_file && !file_path.is_file() {
+            //It's a new file.
             should_load_file = false;
         }
 
@@ -85,7 +86,7 @@ fn main() {
             buffer.push(String::with_capacity(width));
         }
         let mut bottom_bar_buffer = String::with_capacity(width);
-        
+
         let mut first_loop = true;
         while running {
             {
@@ -94,7 +95,9 @@ fn main() {
                 height = h as usize;
             }
             let mut should_render = false;
-            if first_loop { should_render = true; }
+            if first_loop {
+                should_render = true;
+            }
 
             if should_load_file {
                 should_render = true;
@@ -176,7 +179,7 @@ fn main() {
                                         file_mode = FileMode::Edit;
                                     }
                                 }
-                                Key::Char(c)  => {
+                                Key::Char(c) => {
                                     bottom_bar_buffer.push(c);
                                 }
                                 Key::Backspace => {
@@ -205,7 +208,7 @@ fn main() {
                                                 cursor_column += 1;
                                             }
                                         }
-                                        Key::Char(c)  => {
+                                        Key::Char(c) => {
                                             buffer[cursor_line as usize]
                                                 .insert(cursor_column as usize, c);
                                             cursor_column += 1;
@@ -230,7 +233,9 @@ fn main() {
                                 } else {
                                     match c.unwrap() {
                                         // Exit.
-                                        Key::Char(c) if c == (dvorak_to_qwerty('q')) => running = false,
+                                        Key::Char(c) if c == (dvorak_to_qwerty('q')) => {
+                                            running = false
+                                        }
                                         Key::Char(c) if c == (dvorak_to_qwerty('f')) => {
                                             file_mode = FileMode::Open;
                                             bottom_bar_buffer.clear();
@@ -377,73 +382,80 @@ fn main() {
 
             ///RENDER
             if should_render {
-            render_buffer.clear();
-            render_buffer.push_str(termion::cursor::Hide.as_ref());
-            render_buffer.push_str(&termion::cursor::Goto(1,1).to_string());
-            render_buffer.push_str(termion::clear::AfterCursor.as_ref());
+                render_buffer.clear();
+                render_buffer.push_str(termion::cursor::Hide.as_ref());
+                render_buffer.push_str(&termion::cursor::Goto(1, 1).to_string());
+                render_buffer.push_str(termion::clear::AfterCursor.as_ref());
 
-            let mut skips = 0;
-            let mut skips_before_cursor = 0;
+                let mut skips = 0;
+                let mut skips_before_cursor = 0;
 
-            let mut index = 0;
-            while index + skips
-                < (height.min((buffer.len() as isize - window_start as isize).max(0) as usize))
-                    .min(height - 1)
-            {
-                let line = &buffer[index + window_start as usize];
+                let mut index = 0;
+                while index + skips
+                    < (height.min((buffer.len() as isize - window_start as isize).max(0) as usize))
+                        .min(height - 1)
+                {
+                    let line = &buffer[index + window_start as usize];
 
-                render_buffer
-                    .push_str(&termion::cursor::Goto(0, 1 + (index + skips) as u16).to_string());
-                render_buffer.push_str(&format!("{}", index as usize + window_start));
-                render_buffer.push_str(
-                    &termion::cursor::Goto(window_padding as u16 - 2, 1 + (index + skips) as u16)
-                        .to_string(),
-                );
-                render_buffer.push_str(":");
-                render_buffer.push_str(
-                    &termion::cursor::Goto(window_padding as u16, 1 + (index + skips) as u16)
-                        .to_string(),
-                );
-                render_buffer.push_str(line);
-
-                skips += line_wrap_count(line, width - window_padding + 1);
-                if index + window_start < cursor_line as usize {
-                    skips_before_cursor = skips;
-                }
-
-                index += 1;
-            }
-
-            match file_mode {
-                FileMode::Edit => {
-                    let file = file_path.to_str().unwrap();
+                    render_buffer.push_str(
+                        &termion::cursor::Goto(0, 1 + (index + skips) as u16).to_string(),
+                    );
+                    render_buffer.push_str(&format!("{}", index as usize + window_start));
                     render_buffer.push_str(
                         &termion::cursor::Goto(
-                            (width as isize - file.len() as isize).max(0) as u16,
-                            height as u16,
+                            window_padding as u16 - 2,
+                            1 + (index + skips) as u16,
                         )
                         .to_string(),
                     );
-                    render_buffer.push_str(file);
-                    render_buffer.push_str(&termion::cursor::Goto(0, height as u16).to_string());
-                    if insert_mode {
-                        render_buffer.push_str("Insert Mode");
-                    } else {
-                        render_buffer.push_str("Move Mode");
+                    render_buffer.push_str(":");
+                    render_buffer.push_str(
+                        &termion::cursor::Goto(window_padding as u16, 1 + (index + skips) as u16)
+                            .to_string(),
+                    );
+                    render_buffer.push_str(line);
+
+                    skips += line_wrap_count(line, width - window_padding + 1);
+                    if index + window_start < cursor_line as usize {
+                        skips_before_cursor = skips;
                     }
+
+                    index += 1;
                 }
-                FileMode::Open => {
-                    render_buffer.push_str(&termion::cursor::Goto(0, height as u16).to_string());
-                    render_buffer.push_str("Open File : ");
-                    render_buffer.push_str(&bottom_bar_buffer);
+
+                match file_mode {
+                    FileMode::Edit => {
+                        let file = file_path.to_str().unwrap();
+                        render_buffer.push_str(
+                            &termion::cursor::Goto(
+                                (width as isize - file.len() as isize).max(0) as u16,
+                                height as u16,
+                            )
+                            .to_string(),
+                        );
+                        render_buffer.push_str(file);
+                        render_buffer
+                            .push_str(&termion::cursor::Goto(0, height as u16).to_string());
+                        if insert_mode {
+                            render_buffer.push_str("Insert Mode");
+                        } else {
+                            render_buffer.push_str("Move Mode");
+                        }
+                    }
+                    FileMode::Open => {
+                        render_buffer
+                            .push_str(&termion::cursor::Goto(0, height as u16).to_string());
+                        render_buffer.push_str("Open File : ");
+                        render_buffer.push_str(&bottom_bar_buffer);
+                    }
+                    FileMode::SaveAsPrompt => {
+                        render_buffer
+                            .push_str(&termion::cursor::Goto(0, height as u16).to_string());
+                        render_buffer.push_str("Save as : ");
+                        render_buffer.push_str(&bottom_bar_buffer);
+                    }
+                    _ => (),
                 }
-                FileMode::SaveAsPrompt => {
-                    render_buffer.push_str(&termion::cursor::Goto(0, height as u16).to_string());
-                    render_buffer.push_str("Save as : ");
-                    render_buffer.push_str(&bottom_bar_buffer);
-                }
-                _ => (),
-            }
 
                 render_buffer.push_str(
                     &termion::cursor::Goto(
@@ -466,8 +478,3 @@ fn main() {
     }
     println!("Thank you for using dte!");
 }
-
-
-
-
-
