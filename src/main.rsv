@@ -86,7 +86,7 @@ fn main() {
         }
         let mut bottom_bar_buffer = String::with_capacity(width);
         
-        let mut first_loop = true;
+        
         while running {
             {
                 let (w, h) = termion::terminal_size().unwrap();
@@ -94,7 +94,6 @@ fn main() {
                 height = h as usize;
             }
             let mut should_render = false;
-            if first_loop { should_render = true; }
 
             if should_load_file {
                 should_render = true;
@@ -379,8 +378,7 @@ fn main() {
             if should_render {
             render_buffer.clear();
             render_buffer.push_str(termion::cursor::Hide.as_ref());
-            render_buffer.push_str(&termion::cursor::Goto(1,1).to_string());
-            render_buffer.push_str(termion::clear::AfterCursor.as_ref());
+            render_buffer.push_str(termion::clear::All.as_ref());
 
             let mut skips = 0;
             let mut skips_before_cursor = 0;
@@ -457,7 +455,6 @@ fn main() {
                 write!(stdout, "{}", &render_buffer);
                 stdout.flush().unwrap();
             }
-            first_loop = false;
             std::thread::sleep(std::time::Duration::from_millis(1));
         }
         write!(stdout, "{}", termion::cursor::Show);
