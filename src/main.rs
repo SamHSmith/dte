@@ -215,7 +215,7 @@ fn main() {
                                                 cursor_column -= 1;
                                                 buffer[cursor_line as usize]
                                                     .remove(cursor_column as usize);
-                                            } else {
+                                            } else if cursor_line > 0 {
                                                 let st = buffer.remove(cursor_line as usize);
                                                 let length = buffer[cursor_line as usize - 1].len();
                                                 buffer[cursor_line as usize - 1]
@@ -287,12 +287,13 @@ fn main() {
                                             }
                                         }
                                         Key::Char(c) if c == (dvorak_to_qwerty('d')) => {
-                                            if (cursor_column as usize)
+                                            if (cursor_line as usize) < buffer.len() &&
+                                                    (cursor_column as usize)
                                                 < buffer[cursor_line as usize].len()
                                             {
                                                 buffer[cursor_line as usize]
                                                     .remove(cursor_column as usize);
-                                            } else {
+                                            } else if (cursor_line as usize + 1) < buffer.len() {
                                                 let st = buffer.remove(cursor_line as usize + 1);
                                                 buffer[cursor_line as usize]
                                                     .insert_str(cursor_column as usize, &st);
@@ -307,7 +308,7 @@ fn main() {
                                                 if cursor_line as usize > buffer.len() {
                                                     cursor_line -= 1;
                                                     cursor_column = 0;
-                                                } else {
+                                                } else if cursor_line > 0 {
                                                     let st =
                                                         if (cursor_line as usize) < buffer.len() {
                                                             buffer.remove(cursor_line as usize)
@@ -324,6 +325,7 @@ fn main() {
                                             }
                                         }
                                         Key::Char(c) if c == (dvorak_to_qwerty('k')) => {
+                                        if (cursor_line as usize) < buffer.len() { 
                                             if cursor_column as usize
                                                 >= buffer[cursor_line as usize].len() &&
                                                     buffer.len() > (cursor_line + 1) as usize
@@ -342,6 +344,7 @@ fn main() {
                                                     .truncate(cursor_column as usize);
                                                 //Copy pasta
                                             }
+                                        }
                                         }
                                         Key::Esc => {
                                             cursor_column = current_indentation;
