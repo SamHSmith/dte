@@ -86,10 +86,6 @@ fn main() {
         }
         let mut bottom_bar_buffer = String::with_capacity(width);
 
-        let mut last_cursor_flip = std::time::Instant::now();
-        let mut cursor_on = false;
-        const cursor_cycle_duration: u128 = 1000;
-
         while running {
             {
                 let (w, h) = termion::terminal_size().unwrap();
@@ -198,8 +194,6 @@ fn main() {
                                             cursor_line += 1;
                                         }
                                         Key::Char(c) if c == (dvorak_to_qwerty('\t')) => {
-                                            last_cursor_flip = std::time::Instant::now();
-                                            cursor_on = true;
                                             for x in 0..4 {
                                                 buffer[cursor_line as usize]
                                                     .insert(cursor_column as usize, ' ');
@@ -212,8 +206,6 @@ fn main() {
                                             cursor_column += 1;
                                         }
                                         Key::Backspace => {
-                                            last_cursor_flip = std::time::Instant::now();
-                                            cursor_on = true;
                                             if cursor_column > 0 {
                                                 cursor_column -= 1;
                                                 buffer[cursor_line as usize]
@@ -262,33 +254,21 @@ fn main() {
                                         }
                                         Key::Char(c) if c == (dvorak_to_qwerty('t')) => {
                                             cursor_column += 1;
-                                            last_cursor_flip = std::time::Instant::now();
-                                            cursor_on = true;
                                         }
                                         Key::Char(c) if c == (dvorak_to_qwerty('h')) => {
                                             cursor_column -= 1;
-                                            last_cursor_flip = std::time::Instant::now();
-                                            cursor_on = true;
                                         }
                                         Key::Char(c) if c == (dvorak_to_qwerty('e')) => {
                                             cursor_line += 1;
-                                            last_cursor_flip = std::time::Instant::now();
-                                            cursor_on = true;
                                         }
                                         Key::Char(c) if c == (dvorak_to_qwerty('u')) => {
                                             cursor_line -= 1;
-                                            last_cursor_flip = std::time::Instant::now();
-                                            cursor_on = true;
                                         }
                                         Key::Char(c) if c == (dvorak_to_qwerty('E')) => {
                                             cursor_line += 20;
-                                            last_cursor_flip = std::time::Instant::now();
-                                            cursor_on = true;
                                         }
                                         Key::Char(c) if c == (dvorak_to_qwerty('U')) => {
                                             cursor_line -= 20;
-                                            last_cursor_flip = std::time::Instant::now();
-                                            cursor_on = true;
                                         }
                                         Key::Char(c) if c == (dvorak_to_qwerty('i')) => {
                                             while cursor_line as usize >= buffer.len() {
@@ -302,8 +282,6 @@ fn main() {
                                             }
                                         }
                                         Key::Char(c) if c == (dvorak_to_qwerty('d')) => {
-                                            last_cursor_flip = std::time::Instant::now();
-                                            cursor_on = true;
                                             if (cursor_column as usize)
                                                 < buffer[cursor_line as usize].len()
                                             {
@@ -316,8 +294,6 @@ fn main() {
                                             }
                                         }
                                         Key::Backspace => {
-                                            last_cursor_flip = std::time::Instant::now();
-                                            cursor_on = true;
                                             if cursor_column > 0 {
                                                 cursor_column -= 1;
                                                 buffer[cursor_line as usize]
@@ -363,12 +339,8 @@ fn main() {
                                         }
                                         Key::Esc => {
                                             cursor_column = current_indentation;
-                                            last_cursor_flip = std::time::Instant::now();
-                                            cursor_on = true;
                                         }
                                         Key::Char(c) if c == (dvorak_to_qwerty('\t')) => {
-                                            last_cursor_flip = std::time::Instant::now();
-                                            cursor_on = true;
                                             cursor_column += 4;
                                         }
                                         _ => (),
@@ -466,11 +438,6 @@ fn main() {
                 _ => (),
             }
 
-            if last_cursor_flip.elapsed().as_millis() > cursor_cycle_duration / 2 {
-                last_cursor_flip = std::time::Instant::now();
-                cursor_on = !cursor_on;
-            }
-            if cursor_on {
                 render_buffer.push_str(
                     &termion::cursor::Goto(
                         (window_padding + (cursor_column as usize % (width - window_padding)))
@@ -480,7 +447,7 @@ fn main() {
                     .to_string(),
                 );
                 render_buffer.push_str(termion::cursor::Show.as_ref());
-            }
+
 
             write!(stdout, "{}", &render_buffer);
             stdout.flush().unwrap();
@@ -492,6 +459,7 @@ fn main() {
     }
     println!("Thank you for using dte!");
 }
+
 
 
 
