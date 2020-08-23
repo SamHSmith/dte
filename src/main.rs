@@ -41,14 +41,14 @@ fn dvorak_to_qwerty(c: char) -> char {
     }
     c
 }
-fn srgb_lin(v:u8) -> u8 {
-let mut varR = v as f32 / 255.0;
-if (varR > 0.0031308) {
-    varR = (1.055 * (varR + 0.055)).powf(2.4);
-} else {
-    varR = varR / 12.92;
-}
-return (varR * 255.0) as u8;
+fn srgb_lin(v: u8) -> u8 {
+    let mut varR = v as f32 / 255.0;
+    if (varR > 0.0031308) {
+        varR = (1.055 * (varR + 0.055)).powf(2.4);
+    } else {
+        varR = varR / 12.92;
+    }
+    return (varR * 255.0) as u8;
 }
 
 fn main() {
@@ -74,16 +74,16 @@ fn main() {
 
         //HIGHLIGHTING
         use syntect::easy::HighlightLines;
-use syntect::parsing::SyntaxSet;
-use syntect::highlighting::{ThemeSet, Style};
-use syntect::util::{as_24_bit_terminal_escaped, LinesWithEndings};
+        use syntect::highlighting::{Style, ThemeSet};
+        use syntect::parsing::SyntaxSet;
+        use syntect::util::{as_24_bit_terminal_escaped, LinesWithEndings};
 
-// Load these once at the start of your program
-let ps = SyntaxSet::load_defaults_newlines();
-let ts = ThemeSet::load_defaults();
+        // Load these once at the start of your program
+        let ps = SyntaxSet::load_defaults_newlines();
+        let ts = ThemeSet::load_defaults();
 
-let syntax = ps.find_syntax_by_extension("rs").unwrap();
-let mut h = HighlightLines::new(syntax, &ts.themes["base16-eighties.dark"]);
+        let syntax = ps.find_syntax_by_extension("rs").unwrap();
+        let mut h = HighlightLines::new(syntax, &ts.themes["base16-eighties.dark"]);
 
         let mut render_buffer: String = String::new();
         let mut width: usize;
@@ -420,7 +420,7 @@ let mut h = HighlightLines::new(syntax, &ts.themes["base16-eighties.dark"]);
 
             ///RENDER
             let mut highlight_buffer = String::new();
-            
+
             if should_render {
                 render_buffer.clear();
                 render_buffer.push_str(termion::cursor::Hide.as_ref());
@@ -434,7 +434,7 @@ let mut h = HighlightLines::new(syntax, &ts.themes["base16-eighties.dark"]);
                         .min(height - 1)
                 {
                     let line = &buffer[index + window_start as usize];
-                    
+
                     highlight_buffer.clear();
                     let ranges: Vec<(Style, &str)> = h.highlight(line, &ps);
                     for (s, t) in ranges {
@@ -442,9 +442,8 @@ let mut h = HighlightLines::new(syntax, &ts.themes["base16-eighties.dark"]);
                         let g = srgb_lin(s.foreground.g);
                         let b = srgb_lin(s.foreground.b);
 
-                        highlight_buffer.push_str(&termion::color::Rgb(r,
-                            g,b).fg_string());
-                        
+                        highlight_buffer.push_str(&termion::color::Rgb(r, g, b).fg_string());
+
                         highlight_buffer.push_str(t);
                     }
                     let highlightedLine = &highlight_buffer;
@@ -456,27 +455,26 @@ let mut h = HighlightLines::new(syntax, &ts.themes["base16-eighties.dark"]);
                         render_buffer.push(' ');
                     }
                     if show_line_nums {
-                    render_buffer.push_str(
-                        &termion::cursor::Goto(0, 1 + (index + skips) as u16).to_string(),
-                    );
-                    render_buffer.push_str(&format!("{}", index as usize + window_start));
-                    render_buffer.push_str(
-                        &termion::cursor::Goto(
-                            window_padding as u16 - 2,
-                            1 + (index + skips) as u16,
-                        )
-                        .to_string(),
-                    );
-                    render_buffer.push_str(":");
+                        render_buffer.push_str(
+                            &termion::cursor::Goto(0, 1 + (index + skips) as u16).to_string(),
+                        );
+                        render_buffer.push_str(&format!("{}", index as usize + window_start));
+                        render_buffer.push_str(
+                            &termion::cursor::Goto(
+                                window_padding as u16 - 2,
+                                1 + (index + skips) as u16,
+                            )
+                            .to_string(),
+                        );
+                        render_buffer.push_str(":");
                     }
                     render_buffer.push_str(
                         &termion::cursor::Goto(window_padding as u16, 1 + (index + skips) as u16)
                             .to_string(),
                     );
                     render_buffer.push_str(&highlightedLine);
-                    render_buffer.push_str(termion::color::Reset{}.fg_str());
-                    render_buffer.push_str(termion::color::Reset{}.bg_str());
-                    
+                    render_buffer.push_str(termion::color::Reset {}.fg_str());
+                    render_buffer.push_str(termion::color::Reset {}.bg_str());
 
                     let line_wraps = line_wrap_count(line, width - window_padding + 1);
                     skips += line_wraps;
@@ -555,7 +553,3 @@ let mut h = HighlightLines::new(syntax, &ts.themes["base16-eighties.dark"]);
     }
     println!("Thank you for using dte!");
 }
-
-
-
-
