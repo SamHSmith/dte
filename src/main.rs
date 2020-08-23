@@ -83,7 +83,8 @@ fn main() {
         let ts = ThemeSet::load_defaults();
 
         let syntax = ps.find_syntax_by_extension("rs").unwrap();
-        let mut h = HighlightLines::new(syntax, &ts.themes["base16-eighties.dark"]);
+
+        let new_hl = || HighlightLines::new(syntax, &ts.themes["base16-eighties.dark"]);
 
         let mut render_buffer: String = String::new();
         let mut width: usize;
@@ -430,6 +431,8 @@ fn main() {
 
                 let mut skips = 0;
                 let mut skips_before_cursor = 0;
+
+                let mut h = new_hl();
 
                 let mut index = 0;
                 while index
