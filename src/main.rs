@@ -486,9 +486,9 @@ fn main() {
                         (width as isize - window_padding as isize - line.len() as isize).max(0)
                             as usize
                     } else {
-                        width - (line.len() % width)
+                        width - (line.len() % (width - window_padding))
                     };
-                    for i in 0..columns_left {
+                    for i in 0..columns_left+1 { //For some reason the maths is 1 short
                         render_buffer.push(' ');
                     }
 
@@ -553,3 +553,4 @@ fn main() {
     }
     println!("Thank you for using dte!");
 }
+
