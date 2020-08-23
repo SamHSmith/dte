@@ -429,9 +429,9 @@ fn main() {
                 let mut skips_before_cursor = 0;
 
                 let mut index = 0;
-                while index + skips
-                    < (height.min((buffer.len() as isize - window_start as isize).max(0) as usize))
-                        .min(height - 1)
+                while index
+                    < ((height - skips).min((buffer.len() as isize - window_start as isize).max(0) as usize))
+                        .min((height - skips) - 1)
                 {
                     let line = &buffer[index + window_start as usize];
 
@@ -553,4 +553,5 @@ fn main() {
     }
     println!("Thank you for using dte!");
 }
+
 
