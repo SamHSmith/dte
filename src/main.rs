@@ -424,14 +424,18 @@ fn main() {
             if should_render {
                 render_buffer.clear();
                 render_buffer.push_str(termion::cursor::Hide.as_ref());
+                if !show_line_nums {
+                    render_buffer.push_str(termion::clear::All.as_ref());
+                }
 
                 let mut skips = 0;
                 let mut skips_before_cursor = 0;
 
                 let mut index = 0;
                 while index
-                    < ((height - skips).min((buffer.len() as isize - window_start as isize).max(0) as usize))
-                        .min((height - skips) - 1)
+                    < ((height - skips)
+                        .min((buffer.len() as isize - window_start as isize).max(0) as usize))
+                    .min((height - skips) - 1)
                 {
                     let line = &buffer[index + window_start as usize];
 
@@ -488,8 +492,11 @@ fn main() {
                     } else {
                         width - (line.len() % (width - window_padding))
                     };
-                    for i in 0..columns_left+1 { //For some reason the maths is 1 short
-                        render_buffer.push(' ');
+                    if show_line_nums {
+                        for i in 0..columns_left + 1 {
+                            //For some reason the maths is 1 short
+                            render_buffer.push(' ');
+                        }
                     }
 
                     index += 1;
@@ -553,5 +560,3 @@ fn main() {
     }
     println!("Thank you for using dte!");
 }
-
-
