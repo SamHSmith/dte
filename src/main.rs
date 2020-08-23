@@ -35,6 +35,7 @@ fn dvorak_to_qwerty(c: char) -> char {
             'd' => 'h',
             'k' => 'c',
             'f' => 'y',
+            'l' => 'p',
             other => other,
         };
     }
@@ -94,7 +95,8 @@ let mut h = HighlightLines::new(syntax, &ts.themes["base16-eighties.dark"]);
         }
         let mut cursor_line: isize = 0;
         let mut cursor_column: isize = 0;
-        let mut window_padding = 6;
+        let mut window_padding = 0; //Gets set dynamically
+        let mut show_line_nums = true;
         let mut window_start = 0;
         let mut running = true;
 
@@ -258,6 +260,9 @@ let mut h = HighlightLines::new(syntax, &ts.themes["base16-eighties.dark"]);
                                         Key::Char(c) if c == (dvorak_to_qwerty('q')) => {
                                             running = false
                                         }
+                                        Key::Char(c) if c == (dvorak_to_qwerty('l')) => {
+                                            show_line_nums = !show_line_nums;
+                                        }
                                         Key::Char(c) if c == (dvorak_to_qwerty('f')) => {
                                             file_mode = FileMode::Open;
                                             bottom_bar_buffer.clear();
@@ -403,6 +408,12 @@ let mut h = HighlightLines::new(syntax, &ts.themes["base16-eighties.dark"]);
                 window_start = cursor_line as usize;
             }
 
+            if show_line_nums {
+                window_padding = 6;
+            } else {
+                window_padding = 0;
+            }
+
             use termion::cursor::Goto;
             use termion::cursor::Hide;
             use termion::cursor::*;
@@ -444,6 +455,7 @@ let mut h = HighlightLines::new(syntax, &ts.themes["base16-eighties.dark"]);
                     for i in 0..window_padding {
                         render_buffer.push(' ');
                     }
+                    if show_line_nums {
                     render_buffer.push_str(
                         &termion::cursor::Goto(0, 1 + (index + skips) as u16).to_string(),
                     );
@@ -456,6 +468,7 @@ let mut h = HighlightLines::new(syntax, &ts.themes["base16-eighties.dark"]);
                         .to_string(),
                     );
                     render_buffer.push_str(":");
+                    }
                     render_buffer.push_str(
                         &termion::cursor::Goto(window_padding as u16, 1 + (index + skips) as u16)
                             .to_string(),
@@ -542,6 +555,7 @@ let mut h = HighlightLines::new(syntax, &ts.themes["base16-eighties.dark"]);
     }
     println!("Thank you for using dte!");
 }
+
 
 
 
