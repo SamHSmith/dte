@@ -18,6 +18,7 @@ You start the editor by running "dte" in a terminal or tty. You can open a file 
 - Esc to move to the start of the current line. Works only while not in insert mode.(aka move mode)
 - hold shift while pressing e and u to move ten lines at a time.
 - w to write to a file. Works just like open file.
+- l to toggle line numbers. The editor is copy/paste friendly when not showing line numbers.
 - q to quit
 
 ### Qwerty
@@ -33,6 +34,7 @@ You start the editor by running "dte" in a terminal or tty. You can open a file 
 - Esc to move to the start of the current line. Works only while not in insert mode.(aka move mode)
 - hold shift while pressing d and f to move ten lines at a time.
 - m to write to a file. Works just like open file.
+- p to toggle line numbers. The editor is copy/paste friendly when not showing line numbers.
 - q to quit
 
 ## Deps
