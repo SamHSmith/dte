@@ -1,7 +1,8 @@
 Move windows when cursor goes of screen does not take into account skips.
 When editing a line with a skip the cursor miss behaves on the skipped lines. Just enter a fresh file and keep inserting chars until you have wrapped 3 times.
 
-Adding a " in the middle of a file throws the the highlighter off permanently
+code highlighting highlighting only highlights the visable text. State is lost
 
 
       
+
