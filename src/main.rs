@@ -479,7 +479,8 @@ fn main() {
                         &termion::cursor::Goto(window_padding as u16, 1 + (index + skips) as u16)
                             .to_string(),
                     );
-                    render_buffer.push_str(&highlightedLine);
+
+                    render_buffer.push_str(&highlightedLine.replace("\t", "    "));
                     render_buffer.push_str(termion::color::Reset {}.fg_str());
                     render_buffer.push_str(termion::color::Reset {}.bg_str());
 
@@ -541,10 +542,16 @@ fn main() {
                     }
                     _ => (),
                 }
-
+                let mut tab_count = 0;
+                for i in 0..cursor_column {
+                    if &(buffer[cursor_line as usize])[(i as usize)..(i as usize) + 1] == "\t" {
+                        tab_count += 1;
+                    }
+                }
                 render_buffer.push_str(
                     &termion::cursor::Goto(
-                        (window_padding + (cursor_column as usize % (width - window_padding)))
+                        (window_padding
+                            + ((cursor_column + tab_count * 3) as usize % (width - window_padding)))
                             as u16,
                         1 + (cursor_line as usize - window_start + skips_before_cursor) as u16,
                     )
