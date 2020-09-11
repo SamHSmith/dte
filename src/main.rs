@@ -81,12 +81,15 @@ fn main() {
         use syntect::util::{as_24_bit_terminal_escaped, LinesWithEndings};
 
         // Load these once at the start of your program
-        let ps = SyntaxSet::load_defaults_newlines();
+        let ps = SyntaxSet::load_defaults_nonewlines();
         let ts = ThemeSet::load_defaults();
 
-        let syntax = ps.find_syntax_by_extension("rs").unwrap();
-
-        let new_hl = || HighlightLines::new(syntax, &ts.themes["base16-eighties.dark"]);
+        let new_hl = |path: &std::path::Path| HighlightLines::new(
+                ps.find_syntax_by_extension(path.extension()
+                    .unwrap_or(std::ffi::OsStr::new("")).to_str().unwrap())
+                    .unwrap_or(ps.find_syntax_plain_text()),
+                &ts.themes["base16-eighties.dark"],
+            );
 
         let mut render_buffer: String = String::new();
         let mut width: usize;
@@ -443,7 +446,11 @@ fn main() {
                 let mut skips = 0;
                 let mut skips_before_cursor = 0;
 
-                let mut h = new_hl();
+                let mut h = new_hl(&file_path);
+                
+                for i in 0..window_start {
+                    h.highlight(&buffer[i], &ps);
+                }
 
                 let mut index = 0;
                 while index
@@ -587,4 +594,5 @@ fn main() {
     }
     println!("Thank you for using dte!");
 }
+
 
