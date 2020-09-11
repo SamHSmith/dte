@@ -31,6 +31,8 @@ fn dvorak_to_qwerty(c: char) -> char {
             'h' => 'j',
             'E' => 'D',
             'U' => 'F',
+            'H' => 'J',
+            'T' => 'K',
             'i' => 'g',
             'd' => 'h',
             'k' => 'c',
@@ -226,7 +228,7 @@ fn main() {
                                             cursor_column = current_indentation;
                                             cursor_line += 1;
                                         }
-                                        Key::Char(c) if c == (dvorak_to_qwerty('\t')) => {
+                                        Key::Ctrl(c) if c == (dvorak_to_qwerty('t')) => {
                                             for x in 0..4 {
                                                 buffer[cursor_line as usize]
                                                     .insert(cursor_column as usize, ' ');
@@ -385,6 +387,12 @@ fn main() {
                                         }
                                         Key::Char(c) if c == (dvorak_to_qwerty('\t')) => {
                                             cursor_column += 4;
+                                        }
+                                        Key::Char(c) if c == (dvorak_to_qwerty('T')) => {
+                                            cursor_column += 4;
+                                        }
+                                        Key::Char(c) if c == (dvorak_to_qwerty('H')) => {
+                                            cursor_column -= 4;
                                         }
                                         _ => (),
                                     }
@@ -570,3 +578,4 @@ fn main() {
     }
     println!("Thank you for using dte!");
 }
+
