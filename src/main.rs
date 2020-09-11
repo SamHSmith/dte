@@ -448,7 +448,7 @@ fn main() {
 
                 let mut h = new_hl(&file_path);
                 
-                for i in 0..window_start {
+                for i in 0..window_start.min(buffer.len()) {
                     h.highlight(&buffer[i], &ps);
                 }
 
