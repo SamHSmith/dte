@@ -483,7 +483,7 @@ fn main() {
                         render_buffer.push_str(
                             &termion::cursor::Goto(0, 1 + (index + skips) as u16).to_string(),
                         );
-                        render_buffer.push_str(&format!("{}", index as usize + window_start));
+                        render_buffer.push_str(&format!("{}", index as usize + window_start + 1));
                         render_buffer.push_str(
                             &termion::cursor::Goto(
                                 window_padding as u16 - 2,
