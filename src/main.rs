@@ -551,10 +551,13 @@ fn main() {
                     _ => (),
                 }
                 let mut tab_count = 0;
+                if (cursor_line as usize) < buffer.len() && 
+        (cursor_column as usize) < (buffer[cursor_line as usize]).len() {
                 for i in 0..cursor_column {
                     if &(buffer[cursor_line as usize])[(i as usize)..(i as usize) + 1] == "\t" {
                         tab_count += 1;
                     }
+                }
                 }
                 render_buffer.push_str(
                     &termion::cursor::Goto(
