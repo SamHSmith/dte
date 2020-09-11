@@ -140,7 +140,10 @@ fn main() {
                         buffer.push(String::with_capacity(width));
                     }
                     match std::io::BufRead::read_line(&mut f, &mut buffer[index]) {
-                        Ok(0) => break,
+                        Ok(0) => {
+                            buffer.pop();
+                            break;
+                            },
                         Ok(_) => (),
                         _ => panic!(),
                     }
@@ -584,3 +587,4 @@ fn main() {
     }
     println!("Thank you for using dte!");
 }
+
