@@ -17,6 +17,8 @@ You start the editor by running "dte" in a terminal or tty. You can open a file 
 - i to enter insert mode. In insert mode you type normally. To exit insert mode press Esc.
 - Esc to move to the start of the current line. Works only while not in insert mode.(aka move mode)
 - hold shift while pressing e and u to move ten lines at a time.
+- hold shift while pressing h and t to move 4 columns at a time.
+- Ctrl-t in insert mode to write 4 spaces
 - w to write to a file. Works just like open file.
 - l to toggle line numbers. The editor is copy/paste friendly when not showing line numbers.
 - q to quit
@@ -33,6 +35,8 @@ You start the editor by running "dte" in a terminal or tty. You can open a file 
 - g to enter insert mode. In insert mode you type normally. To exit insert mode press Esc.
 - Esc to move to the start of the current line. Works only while not in insert mode.(aka move mode)
 - hold shift while pressing d and f to move ten lines at a time.
+- hold shift while pressing j and k to move 4 columns at a time.
+- Ctrl-k in insert mode to write 4 spaces
 - m to write to a file. Works just like open file.
 - p to toggle line numbers. The editor is copy/paste friendly when not showing line numbers.
 - q to quit
