@@ -240,6 +240,11 @@ fn main() {
                                             cursor_line += 1;
                                         }
                                         Key::Ctrl(c) if c == (dvorak_to_qwerty('t')) => {
+                                            buffer[cursor_line as usize]
+                                                .insert(cursor_column as usize, '\t');
+                                            cursor_column += 1;
+                                        }
+                                        Key::Char(c) if c == (dvorak_to_qwerty('\t')) => {
                                             for x in 0..4 {
                                                 buffer[cursor_line as usize]
                                                     .insert(cursor_column as usize, ' ');
