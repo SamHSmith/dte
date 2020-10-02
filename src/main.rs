@@ -33,6 +33,8 @@ fn dvorak_to_qwerty(c: char) -> char {
             'U' => 'F',
             'H' => 'J',
             'T' => 'K',
+            'a' => 'a',
+            'o' => 's',
             'i' => 'g',
             'd' => 'h',
             'k' => 'c',
@@ -325,6 +327,14 @@ fn main() {
                                         }
                                         Key::Char(c) if c == (dvorak_to_qwerty('U')) => {
                                             cursor_line -= 20;
+                                        }
+                                        Key::Char(c) if c == (dvorak_to_qwerty('a')) => {
+                                            cursor_column = 0;
+                                        }
+                                        Key::Char(c) if c == (dvorak_to_qwerty('o')) => {
+                                            if cursor_line >= 0 && (cursor_line as usize) < buffer.len() {
+                                                cursor_column = buffer[cursor_line as usize].len() as isize;
+                                            }
                                         }
                                         Key::Char(c) if c == (dvorak_to_qwerty('i')) => {
                                             while cursor_line as usize >= buffer.len() {
