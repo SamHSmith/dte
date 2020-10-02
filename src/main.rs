@@ -92,8 +92,8 @@ fn main() {
             );
 
         let mut render_buffer: String = String::new();
-        let mut width: usize;
-        let mut height: usize;
+        let mut width: usize; let mut last_width = 0;
+        let mut height: usize; let mut last_height = 0;
         {
             let (w, h) = termion::terminal_size().unwrap();
             width = w as usize;
@@ -128,6 +128,11 @@ fn main() {
             if first_loop {
                 should_render = true;
             }
+            if width != last_width || height != last_height {
+                should_render = true;
+            }
+            last_width = width;
+            last_height = height;
 
             if should_load_file {
                 should_render = true;
