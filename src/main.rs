@@ -436,7 +436,7 @@ fn main() {
             if show_line_nums {
                 window_padding = 6;
             } else {
-                window_padding = 0;
+                window_padding = 1;
             }
 
             use termion::cursor::Goto;
