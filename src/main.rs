@@ -86,16 +86,24 @@ fn main() {
         let ps = SyntaxSet::load_defaults_nonewlines();
         let ts = ThemeSet::load_defaults();
 
-        let new_hl = |path: &std::path::Path| HighlightLines::new(
-                ps.find_syntax_by_extension(path.extension()
-                    .unwrap_or(std::ffi::OsStr::new("")).to_str().unwrap())
-                    .unwrap_or(ps.find_syntax_plain_text()),
+        let new_hl = |path: &std::path::Path| {
+            HighlightLines::new(
+                ps.find_syntax_by_extension(
+                    path.extension()
+                        .unwrap_or(std::ffi::OsStr::new(""))
+                        .to_str()
+                        .unwrap(),
+                )
+                .unwrap_or(ps.find_syntax_plain_text()),
                 &ts.themes["base16-eighties.dark"],
-            );
+            )
+        };
 
         let mut render_buffer: String = String::new();
-        let mut width: usize; let mut last_width = 0;
-        let mut height: usize; let mut last_height = 0;
+        let mut width: usize;
+        let mut last_width = 0;
+        let mut height: usize;
+        let mut last_height = 0;
         {
             let (w, h) = termion::terminal_size().unwrap();
             width = w as usize;
@@ -153,7 +161,7 @@ fn main() {
                         Ok(0) => {
                             buffer.pop();
                             break;
-                            },
+                        }
                         Ok(_) => (),
                         _ => panic!(),
                     }
@@ -315,6 +323,18 @@ fn main() {
                                         }
                                         Key::Char(c) if c == (dvorak_to_qwerty('h')) => {
                                             cursor_column -= 1;
+                                            if (cursor_line as usize) < buffer.len() {
+                                                while (cursor_column as usize)
+                                                    < buffer[cursor_line as usize].len()
+                                                    && !buffer[cursor_line as usize]
+                                                        .is_char_boundary(cursor_column as usize)
+                                                {
+                                                    cursor_column -= 1;
+                                                    if cursor_column as usize <= 0 {
+                                                        break;
+                                                    }
+                                                }
+                                            }
                                         }
                                         Key::Char(c) if c == (dvorak_to_qwerty('e')) => {
                                             cursor_line += 1;
@@ -332,8 +352,11 @@ fn main() {
                                             cursor_column = 0;
                                         }
                                         Key::Char(c) if c == (dvorak_to_qwerty('o')) => {
-                                            if cursor_line >= 0 && (cursor_line as usize) < buffer.len() {
-                                                cursor_column = buffer[cursor_line as usize].len() as isize;
+                                            if cursor_line >= 0
+                                                && (cursor_line as usize) < buffer.len()
+                                            {
+                                                cursor_column =
+                                                    buffer[cursor_line as usize].len() as isize;
                                             }
                                         }
                                         Key::Char(c) if c == (dvorak_to_qwerty('i')) => {
@@ -419,6 +442,18 @@ fn main() {
                                         }
                                         Key::Char(c) if c == (dvorak_to_qwerty('H')) => {
                                             cursor_column -= 4;
+                                            if (cursor_line as usize) < buffer.len() {
+                                                while (cursor_column as usize)
+                                                    < buffer[cursor_line as usize].len()
+                                                    && !buffer[cursor_line as usize]
+                                                        .is_char_boundary(cursor_column as usize)
+                                                {
+                                                    cursor_column -= 1;
+                                                    if (cursor_column as usize) < 0 {
+                                                        break;
+                                                    }
+                                                }
+                                            }
                                         }
                                         _ => (),
                                     }
@@ -430,12 +465,22 @@ fn main() {
 
                     None => break,
                 }
-            }
-            if cursor_line < 0 {
-                cursor_line = 0;
-            }
-            if cursor_column < 0 {
-                cursor_column = 0;
+                if cursor_line < 0 {
+                    cursor_line = 0;
+                }
+                if cursor_column < 0 {
+                    cursor_column = 0;
+                }
+                if (cursor_line as usize) < buffer.len() {
+                    while (cursor_column as usize) < buffer[cursor_line as usize].len()
+                        && !buffer[cursor_line as usize].is_char_boundary(cursor_column as usize)
+                    {
+                        cursor_column += 1;
+                        if cursor_column as usize > buffer[cursor_line as usize].len() {
+                            break;
+                        }
+                    }
+                }
             }
             if window_start + height - 2 <= cursor_line as usize {
                 window_start = cursor_line as usize - (height - 2);
@@ -467,7 +512,7 @@ fn main() {
                 let mut skips_before_cursor = 0;
 
                 let mut h = new_hl(&file_path);
-                
+
                 for i in 0..window_start.min(buffer.len()) {
                     h.highlight(&buffer[i], &ps);
                 }
@@ -582,13 +627,9 @@ fn main() {
                 }
                 let mut tab_count = 0;
                 if (cursor_line as usize) < buffer.len() {
-                    for i in 0..cursor_column {
-                        if (i as usize) < (buffer[cursor_line as usize]).len() {
-                            if &(buffer[cursor_line as usize])[(i as usize)..(i as usize + 1)]
-                                == "\t"
-                            {
-                                tab_count += 1;
-                            }
+                    for c in buffer[cursor_line as usize].chars() {
+                        if c == '\t' {
+                            tab_count += 1;
                         }
                     }
                 }
@@ -614,5 +655,3 @@ fn main() {
     }
     println!("Thank you for using dte!");
 }
-
-
