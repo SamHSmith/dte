@@ -618,13 +618,14 @@ fn main() {
                 }
                 let mut tab_count = 0;
                 if (cursor_line as usize) < buffer.len() {
-                    for c in buffer[cursor_line as usize].chars() {
+                    for (i, c) in buffer[cursor_line as usize].chars().enumerate() {
+                        if i >= (cursor_column as usize) { break; }
                         if c == '\t' {
                             tab_count += 1;
                         }
                     }
                 }
-                let _xplace = (cursor_column + tab_count * 3) as usize;
+                let _xplace = (cursor_column + (tab_count * 3)) as usize;
                 let xplace = _xplace % (width - window_padding);
                 let yplace = (_xplace - xplace) / (width - window_padding);
                 render_buffer.push_str(
@@ -663,8 +664,13 @@ fn print_frame_to_buffer(buffer: &mut String, x:i32, y:i32, width:u16, height:u3
     let mut cx : u16 = 0; let mut cy : u32 = 0;
     let mut chars = content.chars().peekable();
     while cy < height && chars.peek().is_some() {
-        let nchar = chars.next().unwrap();
- 
+        let mut nchar = chars.next().unwrap();
+        let mut times = if nchar == '\t' {
+            nchar = ' ';
+            4
+        } else { 1 };
+
+        for _p in 0..times {
         if cx >= width || nchar == '\n' { 
             if cx > 0 { buffer.push_str(&cursor::Left(cx).to_string()); }
             buffer.push_str(&cursor::Down(1).to_string());
@@ -672,7 +678,7 @@ fn print_frame_to_buffer(buffer: &mut String, x:i32, y:i32, width:u16, height:u3
         } else {
             buffer.push(nchar);
             cx+=1;
-        }
+        }}
     }
     buffer.push_str(&cursor::Up(cy as u16).to_string());
     buffer.push_str(&cursor::Left(cx as u16).to_string());
