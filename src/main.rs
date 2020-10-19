@@ -2,6 +2,8 @@ use termion::event::Key;
 use termion::input::TermRead;
 use termion::raw::IntoRawMode;
 
+use termion::*;
+
 use std::io::{stdin, stdout, Write};
 
 enum FileMode {
@@ -504,6 +506,7 @@ fn main() {
             if should_render {
                 render_buffer.clear();
                 render_buffer.push_str(termion::cursor::Hide.as_ref());
+                render_buffer.push_str(termion::clear::All.as_ref());
                 if !show_line_nums {
                     render_buffer.push_str(termion::clear::All.as_ref());
                 }
@@ -563,34 +566,22 @@ fn main() {
                             .to_string(),
                     );
 
-                    render_buffer.push_str(&highlightedLine.replace("\t", "    "));
+                    let h = print_frame_to_buffer(&mut render_buffer, 0,0,(width - window_padding - 1) as u16, u32::MAX, true,
+                        line) as usize;
+                    skips += h;
+                    for x in 0..h {
+                        render_buffer.push_str(&cursor::Left(window_padding as u16).to_string());
+                        render_buffer.push_str(&cursor::Down(1).to_string());
+                        for y in 1..window_padding { render_buffer.push(' '); }
+                    }
                     render_buffer.push_str(termion::color::Reset {}.fg_str());
                     render_buffer.push_str(termion::color::Reset {}.bg_str());
 
-                    let line_wraps = line_wrap_count(line, width - window_padding + 1);
-                    skips += line_wraps;
                     if index + window_start < cursor_line as usize {
-                        skips_before_cursor = skips;
+                       skips_before_cursor = skips;
                     }
-
-                    let columns_left = if line_wraps <= 0 {
-                        (width as isize - window_padding as isize - line.len() as isize).max(0)
-                            as usize
-                    } else {
-                        width - (line.len() % (width - window_padding))
-                    };
-                    if show_line_nums {
-                        for i in 0..columns_left + 1 {
-                            //For some reason the maths is 1 short
-                            render_buffer.push(' ');
-                        }
-                    }
-
                     index += 1;
                 }
-                render_buffer
-                    .push_str(&termion::cursor::Goto(1, 1 + (index + skips) as u16).to_string());
-                render_buffer.push_str(termion::clear::AfterCursor.as_ref());
 
                 match file_mode {
                     FileMode::Edit => {
@@ -633,12 +624,13 @@ fn main() {
                         }
                     }
                 }
+                let _xplace = (cursor_column + tab_count * 3) as usize;
+                let xplace = _xplace % (width - window_padding);
+                let yplace = (_xplace - xplace) / (width - window_padding);
                 render_buffer.push_str(
                     &termion::cursor::Goto(
-                        (window_padding
-                            + ((cursor_column + tab_count * 3) as usize % (width - window_padding)))
-                            as u16,
-                        1 + (cursor_line as usize - window_start + skips_before_cursor) as u16,
+                        (window_padding + xplace) as u16,
+                        1 + (cursor_line as usize - window_start + skips_before_cursor + yplace) as u16,
                     )
                     .to_string(),
                 );
@@ -654,4 +646,47 @@ fn main() {
         write!(stdout, "{}", termion::cursor::Goto(1, 1));
     }
     println!("Thank you for using dte!");
+}
+
+fn print_frame_to_buffer(buffer: &mut String, x:i32, y:i32, width:u16, height:u32, line_wrap: bool, content: &str) -> u32
+{
+    if x > 0 {
+        buffer.push_str(&cursor::Right(x as u16).to_string());
+    } else if x < 0 {
+        buffer.push_str(&cursor::Left(-x as u16).to_string());
+    }                                      
+    if y > 0 {
+        buffer.push_str(&cursor::Down(y as u16).to_string());
+    } else if y < 0 {
+        buffer.push_str(&cursor::Up(-y as u16).to_string());
+    }
+    let mut cx : u16 = 0; let mut cy : u32 = 0;
+    let mut chars = content.chars().peekable();
+    while cy < height && chars.peek().is_some() {
+        let nchar = chars.next().unwrap();
+ 
+        if cx >= width || nchar == '\n' { 
+            if cx > 0 { buffer.push_str(&cursor::Left(cx).to_string()); }
+            buffer.push_str(&cursor::Down(1).to_string());
+            cx = 0; cy+=1; 
+        } else {
+            buffer.push(nchar);
+            cx+=1;
+        }
+    }
+    buffer.push_str(&cursor::Up(cy as u16).to_string());
+    buffer.push_str(&cursor::Left(cx as u16).to_string());
+        
+    
+    if x > 0 {
+        buffer.push_str(&cursor::Left(x as u16).to_string());
+    } else if x < 0 {
+        buffer.push_str(&cursor::Right(-x as u16).to_string());
+    }                                      
+    if y > 0 {
+        buffer.push_str(&cursor::Up(y as u16).to_string());
+    } else if y < 0 {
+        buffer.push_str(&cursor::Down(-y as u16).to_string());
+    }
+    cy
 }
