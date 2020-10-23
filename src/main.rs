@@ -554,12 +554,12 @@ fn main() {
                         render_buffer.push_str(&format!("{}", index as usize + window_start + 1));
                         render_buffer.push_str(
                             &termion::cursor::Goto(
-                                window_padding as u16 - 2,
+                                window_padding as u16 - 1,
                                 1 + (index + skips) as u16,
                             )
                             .to_string(),
                         );
-                        render_buffer.push_str(":");
+                        render_buffer.push_str("|");
                     }
                     render_buffer.push_str(
                         &termion::cursor::Goto(window_padding as u16, 1 + (index + skips) as u16)
