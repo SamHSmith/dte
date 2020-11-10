@@ -637,6 +637,17 @@ fn main() {
                 );
                 render_buffer.push_str(termion::cursor::Show.as_ref());
                 write!(stdout, "{}", &render_buffer);
+
+                let mut tb = TextBuffer { x:4, y:10, width:30, height:200, text:Vec::new(), };
+                tb.text.push("
+//HIGHLIGHTING
+use syntect::easy::HighlightLines;
+use syntect::highlighting::{Style, ThemeSet};
+        use syntect::parsing::SyntaxSet;
+        use syntect::util::{as_24_bit_terminal_escaped, LinesWithEndings};
+".to_string());
+
+                print_tbuffer(&mut stdout, &mut tb);
                 stdout.flush().unwrap();
             }
             first_loop = false;
@@ -647,6 +658,60 @@ fn main() {
         write!(stdout, "{}", termion::cursor::Goto(1, 1));
     }
     println!("Thank you for using dte!");
+}
+
+struct TextBuffer {
+    x: i32,
+    y: i32,
+    width: u32,
+    height: u32,
+    text: Vec<String>,
+}
+
+fn print_tbuffer<W>(out: &mut W, tb: &mut TextBuffer)
+    where W : Write
+{
+    let croplx = (0 - tb.x).max(0);
+    let croply = (0 - tb.y).max(0);
+    write!(out, "{}", cursor::Goto(1 + (tb.x + croplx) as u16, 1 + (tb.y + croply) as u16));
+
+    let mut cx = 0; let mut cy = 0;
+    for line in tb.text.iter() {
+    for c in line.chars()
+    {
+        let mut putchar = true;
+        if cx < croplx
+        {
+            cx += 1;
+            putchar = false;
+        }
+        if c != '\n' && putchar
+        {
+            write!(out, "{}", c);
+            cx += 1;
+        }
+
+assert!(tb.width > 2);
+        if c == '\n'
+        {
+            write!(out, "{}", cursor::Left(cx as u16));
+            cx = 0;
+            cy += 1;
+            write!(out, "{}", cursor::Down(1));
+        } else if cx >= tb.width as i32 - 2
+        {
+            write!(out, "->");
+            write!(out, "{}", cursor::Left(cx as u16 + 2));
+            write!(out, "{}", cursor::Down(1));
+            cx = 0;
+            cy += 1;
+        }
+        if cy >= tb.height
+        {
+            return;
+        }
+    }
+    }
 }
 
 fn print_frame_to_buffer(buffer: &mut String, x:i32, y:i32, width:u16, height:u32, line_wrap: bool, content: &str) -> u32
