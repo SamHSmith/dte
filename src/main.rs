@@ -638,8 +638,11 @@ fn main() {
                 render_buffer.push_str(termion::cursor::Show.as_ref());
                 write!(stdout, "{}", &render_buffer);
 
-                let mut tb = TextBuffer { x:4, y:10, width:30, height:200, text:Vec::new(), };
+                let mut tb = TextBuffer { x:10, y:0, width:30, height:200, text:Vec::new(),
+                    start_line: cursor_line as u32 };
                 tb.text.push("
+
+
 //HIGHLIGHTING
 use syntect::easy::HighlightLines;
 use syntect::highlighting::{Style, ThemeSet};
@@ -666,20 +669,22 @@ struct TextBuffer {
     width: u32,
     height: u32,
     text: Vec<String>,
+    start_line: u32,
 }
 
 fn print_tbuffer<W>(out: &mut W, tb: &mut TextBuffer)
     where W : Write
 {
-    let croplx = (0 - tb.x).max(0);
-    let croply = (0 - tb.y).max(0);
-    write!(out, "{}", cursor::Goto(1 + (tb.x + croplx) as u16, 1 + (tb.y + croply) as u16));
+    let croplx: u32 = (0 - tb.x).max(0) as u32;
+    let croply: u32 = (0 - tb.y).max(0) as u32;
+    write!(out, "{}", cursor::Goto(1 + (tb.x + croplx as i32) as u16, 1 + (tb.y + croply as i32) as u16));
 
-    let mut cx = 0; let mut cy = 0;
+    let mut cx : u32 = 0; let mut cy: u32 = 0;
     for line in tb.text.iter() {
     for c in line.chars()
     {
         let mut putchar = true;
+
         if cx < croplx
         {
             cx += 1;
@@ -694,23 +699,31 @@ fn print_tbuffer<W>(out: &mut W, tb: &mut TextBuffer)
 assert!(tb.width > 2);
         if c == '\n'
         {
-            write!(out, "{}", cursor::Left(cx as u16));
+            for _j in 0..(tb.width-cx) { write!(out, " "); cx += 1; }
+            write!(out, "{}", cursor::Left((cx - croplx) as u16));
             cx = 0;
+            if cy >= tb.start_line { write!(out, "{}", cursor::Down(1)); }
             cy += 1;
-            write!(out, "{}", cursor::Down(1));
-        } else if cx >= tb.width as i32 - 2
+        } else if cx >= tb.width - 2
         {
             write!(out, "->");
-            write!(out, "{}", cursor::Left(cx as u16 + 2));
-            write!(out, "{}", cursor::Down(1));
+            if cy >= tb.start_line { write!(out, "{}", cursor::Down(1)); }
+            write!(out, "{}", cursor::Left((cx - croplx) as u16 + 2));
             cx = 0;
             cy += 1;
         }
-        if cy >= tb.height
+        if cy >= tb.height + tb.start_line
         {
             return;
         }
     }
+    }
+    for y in cy..tb.height {
+        for x in cx..tb.width {
+            write!(out, " ");
+        }
+        write!(out, "{}", cursor::Left((cx - croplx) as u16));
+        cx = 0;
     }
 }
 
