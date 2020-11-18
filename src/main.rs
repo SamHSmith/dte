@@ -123,6 +123,9 @@ fn main() {
         let mut insert_mode = false;
         let mut file_mode = FileMode::Edit;
 
+        let mut tb = TextBuffer { x:0, y:0, width:20, height:10, text:Vec::new(),
+                    start_line: cursor_line as u32 };
+
         let mut buffer = Vec::new();
         for y in 0..1 {
             buffer.push(String::with_capacity(width));
@@ -635,8 +638,11 @@ fn main() {
                 render_buffer.push_str(termion::cursor::Show.as_ref());
 //                write!(stdout, "{}", &render_buffer);
 
-                let mut tb = TextBuffer { x:3, y:2, width:20, height:10, text:Vec::new(),
-                    start_line: cursor_line as u32 };
+                tb.width = width as u32;
+                tb.height = height as u32;
+                tb.start_line = cursor_line as u32;
+//                tb.text = buffer.clone();
+
                 tb.text.push("
 
 
