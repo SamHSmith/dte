@@ -506,10 +506,7 @@ fn main() {
             if should_render {
                 render_buffer.clear();
                 render_buffer.push_str(termion::cursor::Hide.as_ref());
-                render_buffer.push_str(termion::clear::All.as_ref());
-                if !show_line_nums {
-                    render_buffer.push_str(termion::clear::All.as_ref());
-                }
+//                render_buffer.push_str(termion::clear::All.as_ref());
 
                 let mut skips = 0;
                 let mut skips_before_cursor = 0;
@@ -636,9 +633,9 @@ fn main() {
                     .to_string(),
                 );
                 render_buffer.push_str(termion::cursor::Show.as_ref());
-                write!(stdout, "{}", &render_buffer);
+//                write!(stdout, "{}", &render_buffer);
 
-                let mut tb = TextBuffer { x:10, y:0, width:30, height:200, text:Vec::new(),
+                let mut tb = TextBuffer { x:3, y:2, width:20, height:10, text:Vec::new(),
                     start_line: cursor_line as u32 };
                 tb.text.push("
 
@@ -656,9 +653,9 @@ use syntect::highlighting::{Style, ThemeSet};
             first_loop = false;
             std::thread::sleep(std::time::Duration::from_millis(10));
         }
-        write!(stdout, "{}", termion::cursor::Show);
-        write!(stdout, "{}", termion::clear::All);
-        write!(stdout, "{}", termion::cursor::Goto(1, 1));
+//        write!(stdout, "{}", termion::cursor::Show);
+//        write!(stdout, "{}", termion::clear::All);
+//        write!(stdout, "{}", termion::cursor::Goto(1, 1));
     }
     println!("Thank you for using dte!");
 }
@@ -718,11 +715,13 @@ assert!(tb.width > 2);
         }
     }
     }
-    for y in cy..tb.height {
-        for x in cx..tb.width {
+    for y in cy.saturating_sub(tb.start_line)..tb.height {
+        while cx < tb.width {
             write!(out, " ");
+            cx += 1;
         }
         write!(out, "{}", cursor::Left((cx - croplx) as u16));
+        write!(out, "{}", cursor::Down(1));
         cx = 0;
     }
 }
