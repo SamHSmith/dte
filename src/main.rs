@@ -688,7 +688,7 @@ fn print_tbuffer<W>(out: &mut W, tb: &mut TextBuffer)
     {
         let mut putchar = true;
 
-        if cx < croplx
+        if cx < croplx || cy < tb.start_line
         {
             cx += 1;
             putchar = false;
