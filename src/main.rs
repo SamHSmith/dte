@@ -683,6 +683,7 @@ fn print_tbuffer<W>(out: &mut W, tb: &mut TextBuffer)
     write!(out, "{}", cursor::Goto(1 + (tb.x + croplx as i32) as u16, 1 + (tb.y + croply as i32) as u16));
 
     let mut cx : u32 = 0; let mut cy: u32 = 0;
+    let mut writtenchars = 0;
     for line in tb.text.iter() {
     for c in line.chars()
     {
@@ -697,21 +698,26 @@ fn print_tbuffer<W>(out: &mut W, tb: &mut TextBuffer)
         {
             write!(out, "{}", c);
             cx += 1;
+            writtenchars += 1;
         }
 
 assert!(tb.width > 2);
         if c == '\n'
         {
-            for _j in 0..(tb.width-cx) { write!(out, " "); cx += 1; }
-            write!(out, "{}", cursor::Left((cx - croplx) as u16));
+            if cy >= tb.start_line {
+                for _j in 0..(tb.width-cx) { write!(out, " "); cx += 1; }
+                write!(out, "{}", cursor::Left((cx - croplx) as u16));
+            }
             cx = 0;
+            writtenchars = 0;
             if cy >= tb.start_line { write!(out, "{}", cursor::Down(1)); }
             cy += 1;
         } else if cx >= tb.width - 2
         {
             write!(out, "->");
             if cy >= tb.start_line { write!(out, "{}", cursor::Down(1)); }
-            write!(out, "{}", cursor::Left((cx - croplx) as u16 + 2));
+            if writtenchars>0 {write!(out, "{}", cursor::Left((cx - croplx) as u16 + 2));}
+            writtenchars = 0;
             cx = 0;
             cy += 1;
         }
