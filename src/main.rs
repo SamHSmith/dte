@@ -680,8 +680,11 @@ fn print_tbuffer<W>(out: &mut W, tb: &mut TextBuffer)
     let mut cx : u32 = 0; let mut cy: u32 = 0;
     let mut writtenchars = 0;
     for line in tb.text.iter() {
-    for c in line.chars()
-    {
+    let mut chars = line.chars().peekable();
+    loop {
+        let c = chars.next();
+        if c == None { break; }
+        let c = c.unwrap();
         let mut putchar = true;
 
         if cx < croplx || cy < tb.start_line
@@ -707,7 +710,7 @@ assert!(tb.width > 2);
             writtenchars = 0;
             if cy >= tb.start_line { write!(out, "{}", cursor::Down(1)); }
             cy += 1;
-        } else if cx >= tb.width - 2
+        } else if cx >= tb.width - 2 && chars.peek().unwrap_or(&'\n') != &'\n'
         {
             write!(out, "->");
             if cy >= tb.start_line { write!(out, "{}", cursor::Down(1)); }
