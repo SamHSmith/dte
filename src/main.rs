@@ -124,7 +124,7 @@ fn main() {
         let mut file_mode = FileMode::Edit;
 
         let mut tb = TextBuffer { x:0, y:0, width:20, height:10, text:Vec::new(),
-                    start_line: cursor_line as u32 };
+                    start_line: 0, cursor_x: 0, cursor_y:0 };
 
         let mut buffer = Vec::new();
         for y in 0..1 {
@@ -642,12 +642,15 @@ fn main() {
                 tb.height = height as u32;
                 tb.start_line = window_start as u32;
                 tb.text = buffer.clone();
+                tb.cursor_x = cursor_column as u32;
+                tb.cursor_y = cursor_line as u32;
                 for line in tb.text.iter_mut()
                 {
                     line.push('\n');
                 }
 
-                print_tbuffer(&mut stdout, &mut tb);                
+                print_tbuffer(&mut stdout, &mut tb);
+                stdout.flush().expect("whoops, can't flush");
             }
             first_loop = false;
             std::thread::sleep(std::time::Duration::from_millis(10));
@@ -666,13 +669,15 @@ struct TextBuffer {
     height: u32,
     text: Vec<String>,
     start_line: u32,
-//    cursor_x: u32,
-//    cursor_y: u32,
+    cursor_x: u32,
+    cursor_y: u32,
 }
 
 fn print_tbuffer<W>(out: &mut W, tb: &mut TextBuffer)
     where W : Write
 {
+    write!(out, "{}", termion::cursor::Hide);
+    let mut done = false;
     let croplx: u32 = (0 - tb.x).max(0) as u32;
     let croply: u32 = (0 - tb.y).max(0) as u32;
     write!(out, "{}", cursor::Goto(1 + (tb.x + croplx as i32) as u16, 1 + (tb.y + croply as i32) as u16));
@@ -721,9 +726,11 @@ assert!(tb.width > 2);
         }
         if cy >= tb.height + tb.start_line
         {
-            return;
+            done = true;
         }
+        if done { break; }
     }
+    if done { break; }
     }
     for y in cy.saturating_sub(tb.start_line)..tb.height {
         while cx < tb.width {
@@ -734,6 +741,8 @@ assert!(tb.width > 2);
         write!(out, "{}", cursor::Down(1));
         cx = 0;
     }
+    write!(out, "{}", cursor::Show);
+    write!(out, "{}", cursor::Goto(tb.cursor_x as u16 + 1, tb.cursor_y as u16 + 1));
 }
 
 fn print_frame_to_buffer(buffer: &mut String, x:i32, y:i32, width:u16, height:u32, line_wrap: bool, content: &str) -> u32
