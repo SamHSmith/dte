@@ -640,21 +640,14 @@ fn main() {
 
                 tb.width = width as u32;
                 tb.height = height as u32;
-                tb.start_line = cursor_line as u32;
-//                tb.text = buffer.clone();
+                tb.start_line = window_start as u32;
+                tb.text = buffer.clone();
+                for line in tb.text.iter_mut()
+                {
+                    line.push('\n');
+                }
 
-                tb.text.push("
-
-
-//HIGHLIGHTING
-use syntect::easy::HighlightLines;
-use syntect::highlighting::{Style, ThemeSet};
-        use syntect::parsing::SyntaxSet;
-        use syntect::util::{as_24_bit_terminal_escaped, LinesWithEndings};
-".to_string());
-
-                print_tbuffer(&mut stdout, &mut tb);
-                stdout.flush().unwrap();
+                print_tbuffer(&mut stdout, &mut tb);                
             }
             first_loop = false;
             std::thread::sleep(std::time::Duration::from_millis(10));
@@ -673,6 +666,8 @@ struct TextBuffer {
     height: u32,
     text: Vec<String>,
     start_line: u32,
+//    cursor_x: u32,
+//    cursor_y: u32,
 }
 
 fn print_tbuffer<W>(out: &mut W, tb: &mut TextBuffer)
