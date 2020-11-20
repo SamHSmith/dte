@@ -639,7 +639,7 @@ fn main() {
 //                write!(stdout, "{}", &render_buffer);
 
                 tb.width = width as u32;
-                tb.height = height as u32;
+                tb.height = height as u32 - 1;
                 tb.start_line = window_start as u32;
                 tb.text = buffer.clone();
                 tb.cursor_x = cursor_column as u32;
@@ -717,8 +717,7 @@ assert!(tb.width > 2);
             cy += 1;
         } else if cx >= tb.width - 2 && chars.peek().unwrap_or(&'\n') != &'\n'
         {
-            write!(out, "->");
-            if cy >= tb.start_line { write!(out, "{}", cursor::Down(1)); }
+            if cy >= tb.start_line { write!(out, "->"); write!(out, "{}", cursor::Down(1)); }
             if writtenchars>0 {write!(out, "{}", cursor::Left((cx - croplx) as u16 + 2));}
             writtenchars = 0;
             cx = 0;
@@ -742,7 +741,7 @@ assert!(tb.width > 2);
         cx = 0;
     }
     write!(out, "{}", cursor::Show);
-    write!(out, "{}", cursor::Goto(tb.cursor_x as u16 + 1, tb.cursor_y as u16 + 1));
+    write!(out, "{}", cursor::Goto(tb.cursor_x as u16 + 1, (tb.cursor_y - tb.start_line) as u16 + 1));
 }
 
 fn print_frame_to_buffer(buffer: &mut String, x:i32, y:i32, width:u16, height:u32, line_wrap: bool, content: &str) -> u32
