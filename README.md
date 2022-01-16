@@ -1,3 +1,5 @@
+## This is not high enough quality for me to consider "publishing" this today. Do what you wish with this repo, but I would advice you don't use it.
+
 # dte
 May I introduce you to a little project of mine, Dvorak Text Editor.
 
