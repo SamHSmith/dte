@@ -193,8 +193,14 @@ fn main() {
                                         Key::Char(c) if c == '\t' => {
                                             let pad_count = 4 - (cursor_column % 4);
                                             for x in 0..pad_count {
+                                                let index = if cursor_column < buffer[cursor_line as usize].chars().count() as isize
+                                                {
+                                                    buffer[cursor_line as usize].char_indices()
+                                                    .nth(cursor_column as usize).unwrap().0
+                                                }
+                                                else { buffer[cursor_line as usize].len() };
                                                 buffer[cursor_line as usize]
-                                                    .insert(cursor_column as usize, ' ');
+                                                    .insert(index, ' ');
                                                 cursor_column += 1;
                                             }
                                         }
@@ -217,8 +223,14 @@ fn main() {
                                             cursor_column += 1;
                                         }
                                         Key::Char(c) => {
+                                            let index = if cursor_column < buffer[cursor_line as usize].chars().count() as isize
+                                            {
+                                                buffer[cursor_line as usize].char_indices()
+                                                .nth(cursor_column as usize).unwrap().0
+                                            }
+                                            else { buffer[cursor_line as usize].len() };
                                             buffer[cursor_line as usize]
-                                                .insert(cursor_column as usize, c);
+                                                .insert(index, c);
                                             cursor_column += 1;
                                         }
                                         Key::Backspace => {
@@ -368,7 +380,7 @@ fn main() {
                                         }
                                         Key::Char(c) if c == 'o' => {
                                             if (cursor_line as usize) < buffer.len() {
-                                                cursor_column = buffer[cursor_line as usize].len() as isize;
+                                                cursor_column = buffer[cursor_line as usize].chars().count() as isize;
                                             } else {
                                                 cursor_column = current_indentation as isize;
                                             }
@@ -483,7 +495,7 @@ fn main() {
                         render_buffer.push(c);
                     }
                     render_buffer.push_str(termion::style::Underline{}.as_ref());
-                    for i in remainder_are_spaces_index..line.len() {
+                    for i in remainder_are_spaces_index..line.chars().count() {
                         render_buffer.push_str("%");
                     }
                     render_buffer.push_str(termion::style::NoUnderline{}.as_ref());
@@ -552,9 +564,8 @@ fn main() {
                 let mut tab_count = 0;
                 if (cursor_line as usize) < buffer.len() {
                     for i in 0..cursor_column {
-                        if (i as usize) < (buffer[cursor_line as usize]).len() {
-                            if &(buffer[cursor_line as usize])[(i as usize)..(i as usize + 1)]
-                                == "\t"
+                        if (i as usize) < buffer[cursor_line as usize].chars().count() {
+                            if buffer[cursor_line as usize].chars().nth(i as usize).unwrap() == '\t'
                             {
                                 tab_count += 1;
                             }
