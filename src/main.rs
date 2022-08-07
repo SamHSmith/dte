@@ -20,39 +20,6 @@ fn line_wrap_count(text: &str, width: usize) -> usize {
     return t;
 }
 
-fn dvorak_to_qwerty(c: char) -> char {
-    #[cfg(feature = "qwerty")]
-    {
-        return match c {
-            'u' => 'f',
-            'e' => 'd',
-            'w' => 'm',
-            't' => 'k',
-            'h' => 'j',
-            'E' => 'D',
-            'U' => 'F',
-            'H' => 'J',
-            'T' => 'K',
-            'i' => 'g',
-            'd' => 'h',
-            'k' => 'c',
-            'f' => 'y',
-            'l' => 'p',
-            other => other,
-        };
-    }
-    c
-}
-fn srgb_lin(v: u8) -> u8 {
-    let mut varR = v as f32 / 255.0;
-    if (varR > 0.0031308) {
-        varR = (1.055 * (varR + 0.055)).powf(2.4);
-    } else {
-        varR = varR / 12.92;
-    }
-    return (varR * 255.0) as u8;
-}
-
 fn main() {
     {
         let mut args: Vec<String> = std::env::args().collect();
@@ -65,7 +32,12 @@ fn main() {
         file_path = file_path.canonicalize().unwrap();
         let mut should_load_file = file_path.to_str().unwrap().len() > 1 && file_path.exists();
         if args.len() > 1 {
-            file_path.push(args.remove(1));
+            let arg1 = args.remove(1);
+            if arg1.chars().nth(0).unwrap_or(' ') == '/' {
+                file_path = std::path::PathBuf::from(arg1);
+            } else {
+                file_path.push(arg1);
+            }
         } else {
             should_load_file = false;
         }
@@ -73,23 +45,6 @@ fn main() {
             //It's a new file.
             should_load_file = false;
         }
-
-        //HIGHLIGHTING
-        use syntect::easy::HighlightLines;
-        use syntect::highlighting::{Style, ThemeSet};
-        use syntect::parsing::SyntaxSet;
-        use syntect::util::{as_24_bit_terminal_escaped, LinesWithEndings};
-
-        // Load these once at the start of your program
-        let ps = SyntaxSet::load_defaults_nonewlines();
-        let ts = ThemeSet::load_defaults();
-
-        let new_hl = |path: &std::path::Path| HighlightLines::new(
-                ps.find_syntax_by_extension(path.extension()
-                    .unwrap_or(std::ffi::OsStr::new("")).to_str().unwrap())
-                    .unwrap_or(ps.find_syntax_plain_text()),
-                &ts.themes["base16-eighties.dark"],
-            );
 
         let mut render_buffer: String = String::new();
         let mut width: usize;
@@ -101,12 +56,12 @@ fn main() {
         }
         let mut cursor_line: isize = 0;
         let mut cursor_column: isize = 0;
-        let mut window_padding = 0; //Gets set dynamically
+        let mut window_padding : usize = 0; //Gets set dynamically
         let mut show_line_nums = true;
         let mut window_start = 0;
         let mut running = true;
 
-        let mut current_indentation = 0;
+        let mut current_indentation : usize = 0;
 
         let mut insert_mode = false;
         let mut file_mode = FileMode::Edit;
@@ -163,7 +118,7 @@ fn main() {
                         should_render = true;
                         match file_mode {
                             FileMode::Open => match c.unwrap() {
-                                Key::Char(c) if c == (dvorak_to_qwerty('\n')) => {
+                                Key::Char(c) if c == '\n' => {
                                     let path = std::path::Path::new(&bottom_bar_buffer);
                                     if path.parent().is_some()
                                         && path.parent().unwrap().exists()
@@ -192,7 +147,7 @@ fn main() {
                                 _ => (),
                             },
                             FileMode::SaveAsPrompt => match c.unwrap() {
-                                Key::Char(c) if c == (dvorak_to_qwerty('\n')) => {
+                                Key::Char(c) if c == '\n' => {
                                     let path = std::path::Path::new(&bottom_bar_buffer);
                                     if !path.is_dir() {
                                         use std::fs::OpenOptions;
@@ -227,19 +182,39 @@ fn main() {
                                 ///////////////
                                 if insert_mode {
                                     match c.unwrap() {
-                                        Key::Char(c) if c == (dvorak_to_qwerty('\n')) => {
-                                            let newstr = buffer[cursor_line as usize]
+                                        Key::Char(c) if c == '\n' => {
+                                            let mut newstr = buffer[cursor_line as usize]
                                                 .split_off(cursor_column as usize);
+                                            for i in 0..current_indentation { newstr.insert(0, ' '); }
                                             buffer.insert(cursor_line as usize + 1, newstr);
-                                            cursor_column = current_indentation;
+                                            cursor_column = current_indentation as isize;
                                             cursor_line += 1;
                                         }
-                                        Key::Ctrl(c) if c == (dvorak_to_qwerty('t')) => {
-                                            for x in 0..4 {
+                                        Key::Char(c) if c == '\t' => {
+                                            let pad_count = 4 - (cursor_column % 4);
+                                            for x in 0..pad_count {
                                                 buffer[cursor_line as usize]
                                                     .insert(cursor_column as usize, ' ');
                                                 cursor_column += 1;
                                             }
+                                        }
+                                        Key::Ctrl(c) if c == 't' => {
+                                            buffer[cursor_line as usize].insert(cursor_column as usize, '\t');
+                                            cursor_column += 1;
+                                        }
+                                        Key::Char(c) if c == '}' => {
+                                            if cursor_column >= 4 &&
+                                               buffer[cursor_line as usize].chars().nth(cursor_column as usize - 1).unwrap() == ' ' &&
+                                               buffer[cursor_line as usize].chars().nth(cursor_column as usize - 2).unwrap() == ' ' &&
+                                               buffer[cursor_line as usize].chars().nth(cursor_column as usize - 3).unwrap() == ' ' &&
+                                               buffer[cursor_line as usize].chars().nth(cursor_column as usize - 4).unwrap() == ' '
+                                            {
+                                                buffer[cursor_line as usize].replace_range(((cursor_column as usize) - 4)..(cursor_column as usize), "");
+                                                cursor_column -= 4;
+                                            }
+                                            buffer[cursor_line as usize]
+                                                .insert(cursor_column as usize, c);
+                                            cursor_column += 1;
                                         }
                                         Key::Char(c) => {
                                             buffer[cursor_line as usize]
@@ -266,13 +241,13 @@ fn main() {
                                 } else {
                                     match c.unwrap() {
                                         // Exit.
-                                        Key::Char(c) if c == (dvorak_to_qwerty('q')) => {
+                                        Key::Char(c) if c == 'q' => {
                                             running = false
                                         }
-                                        Key::Char(c) if c == (dvorak_to_qwerty('l')) => {
+                                        Key::Char(c) if c == 'l' => {
                                             show_line_nums = !show_line_nums;
                                         }
-                                        Key::Char(c) if c == (dvorak_to_qwerty('f')) => {
+                                        Key::Char(c) if c == 'f' => {
                                             file_mode = FileMode::Open;
                                             bottom_bar_buffer.clear();
                                             bottom_bar_buffer.insert_str(
@@ -290,7 +265,7 @@ fn main() {
                                             );
                                             bottom_bar_buffer.push('/');
                                         }
-                                        Key::Char(c) if c == (dvorak_to_qwerty('w')) => {
+                                        Key::Char(c) if c == 'w' => {
                                             file_mode = FileMode::SaveAsPrompt;
                                             bottom_bar_buffer.clear();
                                             bottom_bar_buffer.insert_str(
@@ -298,25 +273,25 @@ fn main() {
                                                 file_path.as_path().to_str().unwrap(),
                                             );
                                         }
-                                        Key::Char(c) if c == (dvorak_to_qwerty('t')) => {
+                                        Key::Char(c) if c == 't' => {
                                             cursor_column += 1;
                                         }
-                                        Key::Char(c) if c == (dvorak_to_qwerty('h')) => {
+                                        Key::Char(c) if c == 'h' => {
                                             cursor_column -= 1;
                                         }
-                                        Key::Char(c) if c == (dvorak_to_qwerty('e')) => {
+                                        Key::Char(c) if c == 'e' => {
                                             cursor_line += 1;
                                         }
-                                        Key::Char(c) if c == (dvorak_to_qwerty('u')) => {
+                                        Key::Char(c) if c == 'u' => {
                                             cursor_line -= 1;
                                         }
-                                        Key::Char(c) if c == (dvorak_to_qwerty('E')) => {
+                                        Key::Char(c) if c == 'E' => {
                                             cursor_line += 20;
                                         }
-                                        Key::Char(c) if c == (dvorak_to_qwerty('U')) => {
+                                        Key::Char(c) if c == 'U' => {
                                             cursor_line -= 20;
                                         }
-                                        Key::Char(c) if c == (dvorak_to_qwerty('i')) => {
+                                        Key::Char(c) if c == 'i' => {
                                             while cursor_line as usize >= buffer.len() {
                                                 buffer.push(String::with_capacity(width));
                                             }
@@ -327,7 +302,7 @@ fn main() {
                                                 buffer[cursor_line as usize].push(' ');
                                             }
                                         }
-                                        Key::Char(c) if c == (dvorak_to_qwerty('d')) => {
+                                        Key::Char(c) if c == 'd' => {
                                             if (cursor_line as usize) < buffer.len()
                                                 && (cursor_column as usize)
                                                     < buffer[cursor_line as usize].len()
@@ -365,7 +340,7 @@ fn main() {
                                                 }
                                             }
                                         }
-                                        Key::Char(c) if c == (dvorak_to_qwerty('k')) => {
+                                        Key::Char(c) if c == 'k' => {
                                             if (cursor_line as usize) < buffer.len() {
                                                 if cursor_column as usize
                                                     >= buffer[cursor_line as usize].len()
@@ -389,15 +364,25 @@ fn main() {
                                             }
                                         }
                                         Key::Esc => {
-                                            cursor_column = current_indentation;
+                                            cursor_column = 0;
                                         }
-                                        Key::Char(c) if c == (dvorak_to_qwerty('\t')) => {
+                                        Key::Char(c) if c == 'o' => {
+                                            if (cursor_line as usize) < buffer.len() {
+                                                cursor_column = buffer[cursor_line as usize].len() as isize;
+                                            } else {
+                                                cursor_column = current_indentation as isize;
+                                            }
+                                        }
+                                        Key::Char(c) if c == 'a' => {
+                                            cursor_column = current_indentation as isize;
+                                        }
+                                        Key::Char(c) if c == '\t' => {
                                             cursor_column += 4;
                                         }
-                                        Key::Char(c) if c == (dvorak_to_qwerty('T')) => {
+                                        Key::Char(c) if c == 'T' => {
                                             cursor_column += 4;
                                         }
-                                        Key::Char(c) if c == (dvorak_to_qwerty('H')) => {
+                                        Key::Char(c) if c == 'H' => {
                                             cursor_column -= 4;
                                         }
                                         _ => (),
@@ -424,9 +409,18 @@ fn main() {
             }
 
             if show_line_nums {
-                window_padding = 6;
+                window_padding = 3 + 1 + (f64::log10(buffer.len() as f64) as usize);
             } else {
                 window_padding = 0;
+            }
+
+            if (cursor_line as usize) < buffer.len()
+            {
+                current_indentation = 0;
+                for c in buffer[cursor_line as usize].chars() {
+                    if c != ' ' { break; }
+                    current_indentation += 1;
+                }
             }
 
             use termion::cursor::Goto;
@@ -434,8 +428,6 @@ fn main() {
             use termion::cursor::*;
 
             ///RENDER
-            let mut highlight_buffer = String::new();
-
             if should_render {
                 render_buffer.clear();
                 render_buffer.push_str(termion::cursor::Hide.as_ref());
@@ -446,12 +438,6 @@ fn main() {
                 let mut skips = 0;
                 let mut skips_before_cursor = 0;
 
-                let mut h = new_hl(&file_path);
-                
-                for i in 0..window_start.min(buffer.len()) {
-                    h.highlight(&buffer[i], &ps);
-                }
-
                 let mut index = 0;
                 while index
                     < ((height - skips)
@@ -459,19 +445,6 @@ fn main() {
                     .min((height - skips) - 1)
                 {
                     let line = &buffer[index + window_start as usize];
-
-                    highlight_buffer.clear();
-                    let ranges: Vec<(Style, &str)> = h.highlight(line, &ps);
-                    for (s, t) in ranges {
-                        let r = srgb_lin(s.foreground.r);
-                        let g = srgb_lin(s.foreground.g);
-                        let b = srgb_lin(s.foreground.b);
-
-                        highlight_buffer.push_str(&termion::color::Rgb(r, g, b).fg_string());
-
-                        highlight_buffer.push_str(t);
-                    }
-                    let highlightedLine = &highlight_buffer;
 
                     render_buffer.push_str(
                         &termion::cursor::Goto(0, 1 + (index + skips) as u16).to_string(),
@@ -483,7 +456,7 @@ fn main() {
                         render_buffer.push_str(
                             &termion::cursor::Goto(0, 1 + (index + skips) as u16).to_string(),
                         );
-                        render_buffer.push_str(&format!("{}", index as usize + window_start));
+                        render_buffer.push_str(&format!("{}", index as usize + window_start + 1));
                         render_buffer.push_str(
                             &termion::cursor::Goto(
                                 window_padding as u16 - 2,
@@ -498,7 +471,23 @@ fn main() {
                             .to_string(),
                     );
 
-                    render_buffer.push_str(&highlightedLine.replace("\t", "    "));
+                    let mut remainder_are_spaces_index = line.chars().count();
+                    while remainder_are_spaces_index > 0 &&
+                          line.chars().nth(remainder_are_spaces_index - 1).unwrap() == ' ' &&
+                          (remainder_are_spaces_index > cursor_column as usize || (index + window_start) != cursor_line as usize)
+                    {
+                        remainder_are_spaces_index -= 1;
+                    }
+                    for (i, c) in line.chars().enumerate() {
+                        if i >= remainder_are_spaces_index { break; }
+                        render_buffer.push(c);
+                    }
+                    render_buffer.push_str(termion::style::Underline{}.as_ref());
+                    for i in remainder_are_spaces_index..line.len() {
+                        render_buffer.push_str("%");
+                    }
+                    render_buffer.push_str(termion::style::NoUnderline{}.as_ref());
+
                     render_buffer.push_str(termion::color::Reset {}.fg_str());
                     render_buffer.push_str(termion::color::Reset {}.bg_str());
 

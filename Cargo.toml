@@ -8,7 +8,6 @@ edition = "2018"
 
 [dependencies]
 termion = "1.5.5"
-syntect = { version = "4.2", default-features = false, features = ["default-fancy"]}
 
 
 [features]
